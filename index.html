@@ -875,7 +875,12 @@ function removePhotos(targets) {
   const n = gone.size;
   const left = photos.filter(p => !gone.has(p));
   photos.length = 0; photos.push(...left);
-  if (!photos.length) { cur = -1; addPhotos([{ img: makeSample(), name: 'sample' }], true); toast(`${n}장 삭제함`); return; }
+  if (!photos.length) {
+    cur = -1;
+    const s = new Image(); s.src = 'sample.jpg';
+    addPhotos([s.complete && s.naturalWidth ? { img: s, name: 'SAM_0787' } : { img: makeSample(), name: 'sample' }], true);
+    toast(`${n}장 삭제함`); return;
+  }
   let next = photos.indexOf(curPhoto);
   if (next < 0) next = Math.min(Math.min(...targets), photos.length - 1);
   cur = -1; selectPhoto(next);
@@ -1185,7 +1190,7 @@ async function deliver(blob, filename) {
     $('#note').textContent = `${filename} 저장했어요.`;
   }
 }
-const fileName = p => `${p.sample ? 'sample' : p.name}_${p.s.film}.jpg`;
+const fileName = p => `${p.name}_${p.s.film}.jpg`;
 
 $('#saveBtn').addEventListener('click', async () => {
   if (cur < 0) return;
@@ -1239,6 +1244,13 @@ $('#saveAllBtn').addEventListener('click', async () => {
 
 buildShelf();
 showInfo();
+// 첫 예시 사진: 첫눈 위 단풍 (SAM_0787). 못 불러오면 그려 둔 해변 그림으로
+(function loadSample() {
+  const img = new Image();
+  img.onload = () => { if (photos.every(p => p.sample)) { photos.length = 0; cur = -1; addPhotos([{ img, name: 'SAM_0787' }], true); } };
+  img.onerror = () => {};
+  img.src = 'sample.jpg';
+})();
 addPhotos([{ img: makeSample(), name: 'sample' }], true);
 </script>
 </body>
