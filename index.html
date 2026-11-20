@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>필름 현상소</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* 레이아웃: 라이트박스(필름 보는 판) 위에 필름 한 컷을 크게 올리고, 오른쪽에 필름 설명, 아래에 필름 선반 */
+:root {
+  --bg: #e7e9e5;
+  --surface: #f7f8f5;
+  --ink: #1c1f1c;
+  --muted: #5b625c;
+  --line: #d0d4ce;
+  --accent: #b9561a;
+  --accent-ink: #ffffff;
+  --meter: #c9cec7;
+  --film: #16130f;
+  --edge: #f0994c;
+  --focus: #1f6feb;
+  --display: 'Black Han Sans', 'Malgun Gothic', sans-serif;
+  --body: 'IBM Plex Sans KR', -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111311; --surface: #1a1d1a; --ink: #eceae4; --muted: #9ba19b; --line: #2d312d;
+    --accent: #ee8d45; --accent-ink: #1a1208; --meter: #343934; --focus: #6aa6ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111311; --surface: #1a1d1a; --ink: #eceae4; --muted: #9ba19b; --line: #2d312d;
+  --accent: #ee8d45; --accent-ink: #1a1208; --meter: #343934; --focus: #6aa6ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 22px; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* 머리말 */
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .01em; }
+h1 small { display: block; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--accent); margin-bottom: 8px; }
+.lead { margin: 6px 0 0; color: var(--muted); max-width: 46ch; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 10px 16px; border-radius: 999px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: .55; cursor: wait; }
+.btn svg { width: 16px; height: 16px; }
+
+/* 작업대 */
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+/* 필름 한 컷 */
+.strip { background: var(--film); border-radius: 6px; padding: 30px 14px; position: relative; }
+.strip::before, .strip::after {
+  content: ""; position: absolute; left: 14px; right: 14px; height: 12px;
+  background: repeating-linear-gradient(90deg, transparent 0 9px, #e7e2d6 9px 21px, transparent 21px 30px);
+  -webkit-mask: linear-gradient(#000 0 0); opacity: .9; border-radius: 2px;
+}
+.strip::before { top: 9px; }
+.strip::after { bottom: 9px; }
+.edge { position: absolute; left: 22px; right: 22px; font-family: var(--mono); font-size: 11px; color: var(--edge); letter-spacing: .16em; display: flex; justify-content: space-between; pointer-events: none; white-space: nowrap; overflow: hidden; }
+.edge.top { top: -1px; transform: translateY(-1px); } /* 구멍 위 여백에 글자 */
+.edge span { background: var(--film); padding: 0 6px; }
+.edge.bottom { bottom: -1px; }
+.frame { position: relative; display: grid; place-items: center; min-height: 240px; user-select: none; touch-action: pan-y; }
+.frame canvas { display: block; max-width: 100%; max-height: 68vh; height: auto; }
+#orig { position: absolute; clip-path: inset(0 calc(100% - var(--split, 0%)) 0 0); }
+.split-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); pointer-events: none; display: none; }
+.badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.55); color: #fff; font-size: 12px; padding: 3px 9px; border-radius: 999px; }
+.busy { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.35); color: #fff; font-weight: 500; }
+.drop { outline: 2px dashed var(--edge); outline-offset: -8px; }
+
+.under { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+.under label { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; }
+.under input[type=range] { flex: 1; accent-color: var(--accent); }
+
+/* 필름 설명 */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 16px; }
+.brand { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; color: var(--accent); text-transform: uppercase; }
+.film-name { font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1.1; margin: 4px 0 2px; }
+.film-key { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.desc { margin: 0; }
+.scene { font-size: 13px; color: var(--muted); margin: 0; }
+.scene b { color: var(--ink); font-weight: 600; }
+.meters { display: grid; gap: 12px; }
+.meter-row { display: grid; gap: 5px; }
+.meter-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.meter-head b { color: var(--ink); font-weight: 600; font-size: 13px; }
+.meter { height: 6px; border-radius: 3px; background: var(--meter); position: relative; }
+.meter i { position: absolute; top: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); transform: translateX(-50%); transition: left .25s; }
+.meter.temp { background: linear-gradient(90deg, #6d9fd6, var(--meter) 50%, #e3a24f); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+.ctrl { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.ctrl label { display: grid; grid-template-columns: 64px 1fr 40px; align-items: center; gap: 10px; font-size: 13px; }
+.ctrl input[type=range] { accent-color: var(--accent); width: 100%; }
+.ctrl output { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.note { font-size: 12px; color: var(--muted); margin: 0; min-height: 1.4em; }
+
+/* 필름 선반 */
+.shelf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.tabs button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 13px; color: var(--muted); }
+.tabs button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; margin-top: 14px; }
+.group-title { grid-column: 1 / -1; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; color: var(--muted); margin-top: 6px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.film { border: 2px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px; cursor: pointer; text-align: center; display: grid; gap: 2px; transition: background .15s, border-color .15s; }
+.film:hover { background: var(--bg); }
+.film[aria-pressed=true] { border-color: var(--accent); background: var(--surface); }
+.film .sw { height: 18px; border-radius: 6px; margin-bottom: 4px; }
+.film .ko { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.film .tag { font-size: 12px; color: var(--muted); line-height: 1.35; }
+@media (prefers-reduced-motion: reduce) { .film, .meter i { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1><small>FILM DARKROOM · 29 STOCKS</small>필름 현상소</h1>
+      <p class="lead">사진을 올리고 필름을 고르면 그 필름으로 찍은 것처럼 색이 바뀌어요. 사진은 이 화면 안에서만 처리되고 어디에도 올라가지 않아요.</p>
+    </div>
+    <div class="actions">
+      <input type="file" id="file" accept="image/*" hidden>
+      <button class="btn" id="openBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3M12 4v12M7 9l5-5 5 5"/></svg>사진 열기</button>
+      <button class="btn primary" id="saveBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>현상해서 저장</button>
+    </div>
+  </header>
+
+  <section class="bench">
+    <div>
+      <div class="strip" id="strip">
+        <div class="edge top"><span id="edgeTop">PORTRA 400</span><span id="edgeNum">▸ 12</span></div>
+        <div class="frame" id="frame">
+          <canvas id="out" aria-label="필름 보정 결과"></canvas>
+          <canvas id="orig" aria-hidden="true"></canvas>
+          <div class="split-line" id="splitLine"></div>
+          <span class="badge" id="sampleBadge">예시 사진 — 내 사진을 열어 보세요</span>
+          <div class="busy" id="busy" hidden>현상 중…</div>
+        </div>
+        <div class="edge bottom"><span id="edgeBottom">12A</span><span>→ 13</span></div>
+      </div>
+      <div class="under">
+        <label for="split">원본 비교 <input type="range" id="split" min="0" max="100" value="0"></label>
+        <span>사진을 누르고 있으면 원본이 보여요 · 끌어다 놓기·붙여넣기도 돼요</span>
+      </div>
+    </div>
+
+    <aside class="card" aria-live="polite">
+      <div>
+        <div class="brand" id="infoBrand">KODAK</div>
+        <div class="film-name" id="infoName">포트라 400</div>
+        <div class="film-key" id="infoKey">portra_400</div>
+      </div>
+      <p class="desc" id="infoDesc"></p>
+      <p class="scene" id="infoScene"></p>
+      <div class="meters" id="meters"></div>
+      <div class="chips" id="chips"></div>
+      <div class="ctrl">
+        <label for="strength">강도 <input type="range" id="strength" min="0" max="100" value="100"><output id="strengthOut">100%</output></label>
+        <label for="grain">입자 <input type="range" id="grain" min="0" max="200" value="100"><output id="grainOut">100%</output></label>
+      </div>
+      <p class="note" id="note"></p>
+    </aside>
+  </section>
+
+  <section>
+    <div class="shelf-head">
+      <h2>필름 고르기</h2>
+      <div class="tabs" role="group" aria-label="브랜드">
+        <button type="button" data-brand="all" aria-pressed="true">전체</button>
+        <button type="button" data-brand="fuji" aria-pressed="false">후지필름</button>
+        <button type="button" data-brand="kodak" aria-pressed="false">코닥</button>
+      </div>
+    </div>
+    <div class="shelf" id="shelf"></div>
+  </section>
+</div>
+
+<script>
+// ───────── 필름 프리셋 (스킬 film-look 과 같은 값) ─────────
+const RED=0, ORANGE=30, YELLOW=55, GREEN=110, CYAN=180, BLUE=220, MAGENTA=320;
+const FILMS = [
+  // 후지필름
+  {k:'provia', b:'fuji', ko:'프로비아', en:'PROVIA', tag:'표준 · 무난한 기본색', desc:'자연스러운 채도와 적당한 대비. 무엇을 찍어도 무난한 후지의 기본 색.', scene:'일상, 여행, 무엇이든',
+   curve:[[0,0],[.25,.23],[.5,.5],[.75,.77],[1,1]], sat:1.06},
+  {k:'velvia', b:'fuji', ko:'벨비아', en:'VELVIA', tag:'쨍한 채도 · 강한 대비', desc:'채도와 대비가 강한 슬라이드 필름. 초록과 파랑이 깊고 진해져요.', scene:'풍경, 하늘, 숲, 꽃',
+   wb:[.02,.06], curve:[[0,0],[.2,.14],[.5,.5],[.8,.86],[1,1]], sat:1.35,
+   bands:[[GREEN,1.2,-4,.95],[BLUE,1.2,4,.92],[RED,1.15,-3,1],[MAGENTA,1.2,0,1]], chrome:.3},
+  {k:'astia', b:'fuji', ko:'아스티아', en:'ASTIA', tag:'부드러운 톤 · 고운 피부', desc:'톤은 부드럽게, 피부는 곱게, 하늘과 초록은 선명하게 남겨요.', scene:'인물, 패션, 꽃',
+   wb:[.03,.02], curve:[[0,.01],[.25,.25],[.5,.51],[.75,.76],[1,.99]], sat:1.1,
+   bands:[[ORANGE,.92,0,1.03],[BLUE,1.15,0,1],[GREEN,1.1,0,1]]},
+  {k:'classic_chrome', b:'fuji', ko:'클래식 크롬', en:'CLASSIC CHROME', tag:'낮은 채도 · 다큐 느낌', desc:'채도를 눌러 차분하고, 그림자는 단단해요. 빨강은 벽돌색, 파랑은 청록으로 가라앉아요.', scene:'거리 스냅, 다큐, 건물',
+   wb:[.02,-.02], curve:[[0,0],[.15,.11],[.5,.49],[.8,.78],[1,.97]], sat:.78,
+   bands:[[RED,.75,8,.93],[ORANGE,.85,3,1],[YELLOW,.8,-6,1],[GREEN,.7,-12,.95],[BLUE,.8,-14,.9],[CYAN,.85,0,.95]],
+   shadow:[-.01,0,.015], highlight:[.012,.006,-.01], chrome:.2, grain:[.02,1]},
+  {k:'classic_neg', b:'fuji', ko:'클래식 네거티브', en:'CLASSIC NEG.', tag:'청록 그림자 · 일본 감성', desc:'슈페리아 필름처럼 대비가 강하고 그림자에 청록이 돌아요. 색이 독특하게 갈라져요.', scene:'일상 스냅, 골목, 여행',
+   wb:[0,.02], curve:[[0,.03],[.2,.14],[.5,.5],[.8,.84],[1,.97]], sat:.92,
+   g:[[0,.01],[.5,.51],[1,.99]], bl:[[0,.03],[.5,.49],[1,.96]],
+   bands:[[RED,1.1,4,.92],[GREEN,.8,22,.9],[YELLOW,.85,6,1],[BLUE,.85,-10,.92],[ORANGE,.95,-2,1.02]],
+   shadow:[-.015,.01,.02], highlight:[.02,0,-.015], grain:[.025,1]},
+  {k:'nostalgic_neg', b:'fuji', ko:'노스탤직 네거티브', en:'NOSTALGIC NEG.', tag:'호박색 하이라이트 · 따뜻함', desc:'밝은 부분이 호박색으로 물들고 톤이 부드러워요. 70년대 사진집 같은 느낌.', scene:'오후 햇살, 가족 사진, 추억',
+   wb:[.1,.02], curve:[[0,.02],[.2,.17],[.5,.5],[.8,.8],[1,.96]], sat:1,
+   bands:[[YELLOW,1.1,-4,1],[ORANGE,1.05,-2,1],[BLUE,.85,0,.95],[GREEN,.85,-8,1]],
+   shadow:[0,-.005,-.01], highlight:[.035,.015,-.03], grain:[.02,1]},
+  {k:'pro_neg_std', b:'fuji', ko:'프로 네거티브 STD', en:'PRO NEG. STD', tag:'낮은 대비 · 담백한 색', desc:'대비와 채도를 낮춰 담백해요. 피부가 자연스럽게 나와요.', scene:'스튜디오 인물, 증명·프로필',
+   curve:[[0,.02],[.25,.26],[.5,.5],[.75,.74],[1,.98]], sat:.85, bands:[[ORANGE,.95,0,1.02]]},
+  {k:'pro_neg_hi', b:'fuji', ko:'프로 네거티브 Hi', en:'PRO NEG. HI', tag:'담백하지만 또렷하게', desc:'STD보다 대비를 조금 더 줘서 야외에서도 또렷해요.', scene:'야외 인물, 행사',
+   curve:[[0,.01],[.25,.23],[.5,.5],[.75,.77],[1,.99]], sat:.92, bands:[[ORANGE,.97,0,1.02]]},
+  {k:'eterna', b:'fuji', ko:'이터나', en:'ETERNA', tag:'영화 필름 · 낮은 채도', desc:'채도와 대비가 아주 낮고 그림자가 살짝 들떠 있어요. 영화 장면 같은 색.', scene:'영상 캡처 느낌, 감성 풍경',
+   wb:[-.01,0], curve:[[0,.05],[.25,.27],[.5,.5],[.75,.72],[1,.94]], sat:.7,
+   bands:[[GREEN,.8,8,1],[BLUE,.85,-8,1]], shadow:[-.01,.008,.015], highlight:[.01,.005,-.005], grain:[.015,1]},
+  {k:'eterna_bleach_bypass', b:'fuji', ko:'이터나 블리치 바이패스', en:'BLEACH BYPASS', tag:'색 빠짐 · 금속성 대비', desc:'색은 거의 빠지고 대비는 강해 거칠고 금속 같은 느낌이에요.', scene:'도시, 드라마틱한 장면',
+   curve:[[0,0],[.2,.12],[.5,.5],[.8,.88],[1,1]], sat:.42, shadow:[-.005,0,.01], grain:[.03,1]},
+  {k:'reala_ace', b:'fuji', ko:'리얼라 에이스', en:'REALA ACE', tag:'충실한 색 · 단단한 계조', desc:'눈으로 본 색을 충실하게 담고 계조는 단단하게. 깔끔한 네거티브 느낌.', scene:'음식, 제품, 일상 기록',
+   curve:[[0,0],[.2,.17],[.5,.5],[.8,.83],[1,1]], sat:1.04, bands:[[ORANGE,1,0,1.01],[GREEN,1.05,0,1]]},
+  {k:'acros', b:'fuji', ko:'아크로스', en:'ACROS', tag:'흑백 · 깊은 계조', desc:'깊은 검정과 고운 입자의 흑백. 질감이 살아나요.', scene:'흑백 스냅, 인물',
+   mono:[.3,.59,.11], curve:[[0,0],[.2,.15],[.5,.5],[.8,.85],[1,1]], grain:[.035,1]},
+  {k:'acros_r', b:'fuji', ko:'아크로스 + R 필터', en:'ACROS + R', tag:'흑백 · 극적인 하늘', desc:'빨강 필터를 낀 흑백. 파란 하늘이 아주 어두워져 구름이 도드라져요.', scene:'하늘과 구름, 건물',
+   mono:[.75,.3,-.05], curve:[[0,0],[.2,.14],[.5,.5],[.8,.86],[1,1]], grain:[.035,1]},
+  {k:'acros_ye', b:'fuji', ko:'아크로스 + Ye 필터', en:'ACROS + YE', tag:'흑백 · 자연스러운 하늘', desc:'노랑 필터 흑백. 하늘을 살짝 어둡게 해 자연스러운 대비를 줘요.', scene:'풍경, 거리',
+   mono:[.45,.5,.05], curve:[[0,0],[.2,.15],[.5,.5],[.8,.85],[1,1]], grain:[.035,1]},
+  {k:'acros_g', b:'fuji', ko:'아크로스 + G 필터', en:'ACROS + G', tag:'흑백 · 부드러운 피부', desc:'초록 필터 흑백. 피부톤과 나뭇잎의 계조가 부드러워요.', scene:'흑백 인물, 숲',
+   mono:[.2,.75,.05], curve:[[0,0],[.2,.16],[.5,.5],[.8,.84],[1,1]], grain:[.035,1]},
+  {k:'monochrome', b:'fuji', ko:'모노크롬', en:'MONOCHROME', tag:'흑백 · 기본', desc:'꾸밈 없는 기본 흑백이에요.', scene:'무엇이든',
+   mono:[.3,.59,.11], curve:[[0,0],[.25,.23],[.5,.5],[.75,.77],[1,1]]},
+  {k:'sepia', b:'fuji', ko:'세피아', en:'SEPIA', tag:'갈색 톤 · 옛날 사진', desc:'갈색으로 물든 오래된 사진 느낌.', scene:'옛 건물, 추억 사진',
+   mono:[.3,.59,.11], curve:[[0,.03],[.5,.5],[1,.96]], tone:[.07,.02,-.07]},
+  // 코닥
+  {k:'portra_160', b:'kodak', ko:'포트라 160', en:'PORTRA 160', tag:'저대비 · 고운 입자', desc:'대비가 낮고 색이 자연스러워요. 입자가 아주 고와요.', scene:'밝은 날 인물, 웨딩',
+   wb:[.04,0], curve:[[0,.02],[.25,.26],[.5,.51],[.75,.75],[1,.97]], sat:.88,
+   bands:[[ORANGE,.95,0,1.03],[GREEN,.85,-6,1],[BLUE,.88,-6,1]], highlight:[.01,.005,-.008], grain:[.012,.9]},
+  {k:'portra_400', b:'kodak', ko:'포트라 400', en:'PORTRA 400', tag:'화사한 피부 · 파스텔', desc:'따뜻하고 화사한 피부색, 파스텔 같은 톤, 부드러운 하이라이트. 인물 필름의 대명사.', scene:'인물, 커플, 일상 감성',
+   wb:[.07,.01], curve:[[0,.03],[.25,.27],[.5,.52],[.75,.76],[1,.96]], sat:.92,
+   bands:[[ORANGE,1,-2,1.04],[YELLOW,.9,-4,1.02],[GREEN,.8,-10,1.02],[BLUE,.85,-8,1.02],[RED,.95,4,1]],
+   shadow:[0,.004,.01], highlight:[.02,.01,-.012], grain:[.02,1]},
+  {k:'portra_800', b:'kodak', ko:'포트라 800', en:'PORTRA 800', tag:'더 따뜻하게 · 굵은 입자', desc:'400보다 따뜻하고 색이 진해요. 입자도 조금 더 커요.', scene:'실내, 저녁, 공연',
+   wb:[.1,.02], curve:[[0,.03],[.25,.25],[.5,.52],[.75,.78],[1,.96]], sat:1,
+   bands:[[ORANGE,1.05,-2,1.03],[RED,1.05,3,1],[GREEN,.85,-8,1],[BLUE,.9,-6,1]], highlight:[.025,.01,-.015], grain:[.035,1.2]},
+  {k:'ektar_100', b:'kodak', ko:'엑타 100', en:'EKTAR 100', tag:'쨍한 채도 · 아주 고운 입자', desc:'채도와 대비가 강하고 입자가 거의 안 보여요. 빨강과 파랑이 특히 진해요.', scene:'풍경, 여행, 자동차',
+   wb:[0,.02], curve:[[0,0],[.2,.15],[.5,.5],[.8,.85],[1,1]], sat:1.32,
+   bands:[[RED,1.2,-2,.95],[BLUE,1.2,4,.92],[GREEN,1.05,-4,.95],[ORANGE,1.1,0,1]], chrome:.25, grain:[.01,.8]},
+  {k:'gold_200', b:'kodak', ko:'골드 200', en:'GOLD 200', tag:'노란 햇살 · 레트로', desc:'노랗고 따뜻한 햇살 느낌. 주황과 노랑이 진하게 살아나요.', scene:'여름 스냅, 바다, 레트로',
+   wb:[.13,-.02], curve:[[0,.03],[.2,.18],[.5,.51],[.8,.82],[1,.97]], sat:1.12,
+   bands:[[YELLOW,1.2,-3,1.02],[ORANGE,1.12,0,1.02],[GREEN,.9,-12,1],[BLUE,.85,-6,.97]], highlight:[.03,.02,-.03], grain:[.03,1.1]},
+  {k:'colorplus_200', b:'kodak', ko:'컬러플러스 200', en:'COLORPLUS 200', tag:'바랜 노란 기 · 감성', desc:'살짝 바랜 듯 따뜻한 노란 기와 부드러운 대비. 입문 필름 특유의 감성.', scene:'일상, 카페, 친구 사진',
+   wb:[.12,0], curve:[[0,.05],[.25,.27],[.5,.51],[.75,.75],[1,.94]], sat:.95,
+   bands:[[YELLOW,1.1,-4,1],[GREEN,.8,-14,1],[BLUE,.8,-8,1],[RED,1,4,1]],
+   shadow:[.01,.005,-.005], highlight:[.03,.02,-.03], grain:[.035,1.2], vignette:.15},
+  {k:'ultramax_400', b:'kodak', ko:'울트라맥스 400', en:'ULTRAMAX 400', tag:'진한 색 · 만능', desc:'진하고 따뜻한 색, 또렷한 대비, 굵은 입자. 어디서나 잘 나오는 만능 필름.', scene:'여행, 축제, 스냅',
+   wb:[.08,.01], curve:[[0,.02],[.2,.16],[.5,.5],[.8,.84],[1,.98]], sat:1.18,
+   bands:[[RED,1.15,2,.97],[YELLOW,1.1,-3,1],[BLUE,1.05,-4,.95],[GREEN,.95,-8,1]], highlight:[.02,.01,-.015], grain:[.04,1.2]},
+  {k:'ektachrome_e100', b:'kodak', ko:'엑타크롬 E100', en:'EKTACHROME E100', tag:'깨끗한 슬라이드 · 깊은 파랑', desc:'깨끗하고 살짝 차가운 톤의 슬라이드 필름. 파랑과 청록이 깊어요.', scene:'바다, 하늘, 겨울',
+   wb:[-.05,0], curve:[[0,0],[.2,.14],[.5,.5],[.8,.86],[1,1]], sat:1.2,
+   bands:[[BLUE,1.2,0,.92],[CYAN,1.15,0,.95],[GREEN,1.05,4,.97]], shadow:[-.005,0,.01], chrome:.2, grain:[.012,.9]},
+  {k:'kodachrome_64', b:'kodak', ko:'코다크롬 64', en:'KODACHROME 64', tag:'진한 빨강 · 클래식 잡지', desc:'진한 빨강, 깊은 그림자, 따뜻한 색. 오래된 여행 잡지 사진 같아요.', scene:'여행, 거리, 빈티지',
+   wb:[.05,.02], curve:[[0,0],[.2,.13],[.5,.49],[.8,.84],[1,.98]], sat:1.22,
+   bands:[[RED,1.25,3,.9],[ORANGE,1.05,0,1],[YELLOW,1.1,-2,1],[BLUE,1.1,6,.88],[GREEN,.9,-6,.92]],
+   shadow:[.005,0,-.005], chrome:.3, grain:[.015,.9]},
+  {k:'vision3_500t', b:'kodak', ko:'비전3 500T', en:'VISION3 500T', tag:'푸른 밤 · 빛 번짐', desc:'텅스텐 영화 필름. 푸른 기와 청록 그림자, 밝은 빛 주위로 붉은 번짐이 생겨요.', scene:'밤거리, 네온, 조명',
+   wb:[-.12,0], curve:[[0,.03],[.25,.25],[.5,.5],[.75,.76],[1,.97]], sat:.95,
+   bands:[[ORANGE,1,-4,1.02],[CYAN,1.1,0,1],[RED,1.1,0,1]], shadow:[-.015,.01,.025], highlight:[.02,.005,-.01], grain:[.035,1.2], halation:.35},
+  {k:'tri_x_400', b:'kodak', ko:'트라이엑스 400', en:'TRI-X 400', tag:'흑백 · 거친 입자', desc:'강한 대비와 굵은 입자의 흑백. 거리·다큐 흑백의 상징.', scene:'거리, 다큐, 인물',
+   mono:[.35,.55,.1], curve:[[0,0],[.2,.12],[.5,.5],[.8,.88],[1,1]], grain:[.06,1.3]},
+  {k:'tmax_100', b:'kodak', ko:'티맥스 100', en:'T-MAX 100', tag:'흑백 · 매끈한 계조', desc:'입자가 곱고 계조가 넓은 깔끔한 흑백.', scene:'건축, 정물, 풍경',
+   mono:[.3,.59,.11], curve:[[0,0],[.25,.23],[.5,.5],[.75,.77],[1,1]], grain:[.015,.8]},
+];
+const BYKEY = Object.fromEntries(FILMS.map(f => [f.k, f]));
+
+// ───────── 보정 엔진 ─────────
+function pchipLUT(pts, N = 1024) {
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), n = xs.length;
+  const h = [], d = [];
+  for (let i = 0; i < n - 1; i++) { h.push(xs[i+1] - xs[i]); d.push((ys[i+1] - ys[i]) / h[i]); }
+  const m = new Array(n).fill(0);
+  m[0] = d[0]; m[n-1] = d[n-2];
+  for (let i = 1; i < n - 1; i++) {
+    if (d[i-1] * d[i] > 0) { const w1 = 2*h[i] + h[i-1], w2 = h[i] + 2*h[i-1]; m[i] = (w1 + w2) / (w1 / d[i-1] + w2 / d[i]); }
+  }
+  const lut = new Float32Array(N);
+  for (let j = 0; j < N; j++) {
+    const x = j / (N - 1);
+    let i = 0; while (i < n - 2 && x > xs[i+1]) i++;
+    const t = (x - xs[i]) / h[i], t2 = t*t, t3 = t2*t;
+    lut[j] = (2*t3 - 3*t2 + 1) * ys[i] + (t3 - 2*t2 + t) * h[i] * m[i] + (-2*t3 + 3*t2) * ys[i+1] + (t3 - t2) * h[i] * m[i+1];
+  }
+  return lut;
+}
+const ID = [[0,0],[1,1]];
+for (const f of FILMS) {
+  f.L = pchipLUT(f.curve || ID);
+  if (f.r) f.Lr = pchipLUT(f.r);
+  if (f.g) f.Lg = pchipLUT(f.g);
+  if (f.bl) f.Lb = pchipLUT(f.bl);
+}
+const lk = (L, x) => L[(x <= 0 ? 0 : x >= 1 ? 1023 : x * 1023 + .5) | 0];
+const clamp = x => x < 0 ? 0 : x > 1 ? 1 : x;
+
+function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+function boxBlur(a, w, h, r, passes = 3) {
+  if (r < 1) return a;
+  const tmp = new Float32Array(a.length);
+  for (let p = 0; p < passes; p++) {
+    for (let y = 0; y < h; y++) {
+      const o = y * w; let s = 0;
+      for (let x = -r; x <= r; x++) s += a[o + Math.min(w - 1, Math.max(0, x))];
+      for (let x = 0; x < w; x++) {
+        tmp[o + x] = s / (2*r + 1);
+        s += a[o + Math.min(w - 1, x + r + 1)] - a[o + Math.max(0, x - r)];
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let y = -r; y <= r; y++) s += tmp[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (let y = 0; y < h; y++) {
+        a[y * w + x] = s / (2*r + 1);
+        s += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x];
+      }
+    }
+  }
+  return a;
+}
+
+function develop(src, w, h, f, strength = 1, grainScale = 1) {
+  const d = src.data, N = w * h, out = new Float32Array(N * 3);
+  const [temp, tint] = f.wb || [0, 0];
+  const kr = 1 + temp * .25, kg = 1 - tint * .15, kb = 1 - temp * .25;
+  const sat = f.sat ?? 1, bands = f.bands || [], chrome = f.chrome || 0;
+  const sh = f.shadow, hi = f.highlight, tone = f.tone || [0,0,0], mono = f.mono;
+  const useHsv = bands.length || chrome;
+  for (let i = 0, j = 0; i < N; i++, j += 4) {
+    let r = d[j] / 255 * kr, g = d[j+1] / 255 * kg, b = d[j+2] / 255 * kb;
+    if (mono) {
+      const y = lk(f.L, clamp(r*mono[0] + g*mono[1] + b*mono[2]));
+      const tw = 1 - Math.abs(2*y - 1);
+      r = y + tone[0]*tw; g = y + tone[1]*tw; b = y + tone[2]*tw;
+    } else {
+      r = clamp(r); g = clamp(g); b = clamp(b);
+      if (useHsv) {
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), de = mx - mn;
+        let s = mx > 0 ? de / mx : 0, v = mx, hh = 0;
+        if (de > 0) {
+          hh = mx === r ? ((g - b) / de) % 6 : mx === g ? (b - r) / de + 2 : (r - g) / de + 4;
+          hh *= 60; if (hh < 0) hh += 360;
+        }
+        let sm = 1, hs = 0, vm = 1;
+        const sw = Math.min(s * 3, 1);
+        for (const [c, bs, bh, bv] of bands) {
+          let dist = Math.abs((((hh - c + 180) % 360) + 360) % 360 - 180);
+          if (dist >= 40) continue;
+          const cw = Math.cos(dist / 40 * Math.PI / 2), wt = cw * cw * sw;
+          sm *= 1 + wt * (bs - 1); hs += wt * bh; vm *= 1 + wt * (bv - 1);
+        }
+        if (chrome) vm *= 1 - chrome * .18 * clamp((s - .35) / .65);
+        hh = ((hh + hs) % 360 + 360) % 360; s = clamp(s * sm); v = clamp(v * vm);
+        const hx = hh / 60, k = Math.floor(hx) % 6, fr = hx - Math.floor(hx);
+        const p = v * (1 - s), q = v * (1 - s * fr), t = v * (1 - s * (1 - fr));
+        switch (k) { case 0: r=v; g=t; b=p; break; case 1: r=q; g=v; b=p; break; case 2: r=p; g=v; b=t; break;
+                     case 3: r=p; g=q; b=v; break; case 4: r=t; g=p; b=v; break; default: r=v; g=p; b=q; }
+      }
+      const y = .2126*r + .7152*g + .0722*b;
+      r = lk(f.L, y + (r - y) * sat); g = lk(f.L, y + (g - y) * sat); b = lk(f.L, y + (b - y) * sat);
+      if (f.Lr) r = lk(f.Lr, r);
+      if (f.Lg) g = lk(f.Lg, g);
+      if (f.Lb) b = lk(f.Lb, b);
+      const y2 = clamp(.2126*r + .7152*g + .0722*b);
+      if (sh) { const ws = (1 - y2) * (1 - y2) * 2.5; r += sh[0]*ws; g += sh[1]*ws; b += sh[2]*ws; }
+      if (hi) { const wh = y2 * y2 * 2.5; r += hi[0]*wh; g += hi[1]*wh; b += hi[2]*wh; }
+    }
+    out[i*3] = r; out[i*3+1] = g; out[i*3+2] = b;
+  }
+  const big = Math.max(w, h);
+  if (f.halation) {
+    const m = new Float32Array(N);
+    for (let i = 0; i < N; i++) m[i] = clamp((.2126*out[i*3] + .7152*out[i*3+1] + .0722*out[i*3+2] - .72) / .28);
+    boxBlur(m, w, h, Math.max(1, Math.round(big / 120 / 1.7)));
+    for (let i = 0; i < N; i++) { const a = m[i] * f.halation; out[i*3] += a; out[i*3+1] += a * .35; out[i*3+2] += a * .15; }
+  }
+  if (f.vignette) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = (x - w/2) / (w/2), dy = (y - h/2) / (h/2);
+      const dd = Math.min(1, Math.sqrt(dx*dx + dy*dy) / Math.SQRT2), k = 1 - f.vignette * Math.pow(dd, 2.2), i = (y*w + x) * 3;
+      out[i] *= k; out[i+1] *= k; out[i+2] *= k;
+    }
+  }
+  if (f.grain && grainScale > 0) {
+    const [amt, size] = f.grain, rnd = mulberry(7);
+    const nz = new Float32Array(N);
+    for (let i = 0; i < N; i += 2) {
+      const u = rnd() || 1e-9, v = rnd(), m = Math.sqrt(-2 * Math.log(u));
+      nz[i] = m * Math.cos(6.2831853 * v); if (i + 1 < N) nz[i+1] = m * Math.sin(6.2831853 * v);
+    }
+    const sigma = size * big / 2000 * .8;
+    if (sigma > .6) {
+      boxBlur(nz, w, h, Math.max(1, Math.round(sigma / 1.2)), 2);
+      let ss = 0; for (let i = 0; i < N; i++) ss += nz[i] * nz[i];
+      const sd = Math.sqrt(ss / N) || 1; for (let i = 0; i < N; i++) nz[i] /= sd;
+    }
+    const a = amt * grainScale;
+    for (let i = 0; i < N; i++) {
+      const y = clamp(.2126*out[i*3] + .7152*out[i*3+1] + .0722*out[i*3+2]);
+      const n = nz[i] * a * (.35 + 2.6 * y * (1 - y));
+      out[i*3] += n; out[i*3+1] += n; out[i*3+2] += n;
+    }
+  }
+  const res = new ImageData(w, h), o = res.data;
+  for (let i = 0, j = 0; i < N; i++, j += 4) {
+    for (let c = 0; c < 3; c++) {
+      let v = clamp(out[i*3 + c]);
+      if (strength !== 1) v = d[j+c] / 255 + (v - d[j+c] / 255) * strength;
+      o[j+c] = v * 255 + .5;
+    }
+    o[j+3] = 255;
+  }
+  return res;
+}
+
+// ───────── 색감 지표 (설명 막대) ─────────
+function traits(f) {
+  const contrast = (lk(f.L, .8) - lk(f.L, .2)) / .6;
+  const hiw = f.highlight ? (f.highlight[0] - f.highlight[2]) * 3 : 0;
+  const warm = (f.wb ? f.wb[0] : 0) + hiw;
+  const fade = lk(f.L, 0);
+  const mono = !!f.mono;
+  return {
+    sat: mono ? 0 : clamp(((f.sat ?? 1) - .4) / 1.0),
+    contrast: clamp((contrast - .85) / .4),
+    warm: mono ? (f.tone ? .8 : .5) : clamp(.5 + warm / .36),
+    grain: clamp((f.grain ? f.grain[0] : 0) / .06),
+    fade, mono,
+  };
+}
+function word(v, words) { return words[Math.min(words.length - 1, Math.floor(v * words.length))]; }
+function chipsFor(f, t) {
+  const c = [];
+  if (t.mono) c.push(f.tone ? '갈색 톤 흑백' : '흑백');
+  if (t.fade >= .03) c.push('살짝 바랜 검정');
+  if (f.shadow && f.shadow[2] > .01) c.push('푸른·청록 그림자');
+  if (f.highlight && f.highlight[0] > .018) c.push('따뜻한 하이라이트');
+  if (f.chrome) c.push('진한 색이 깊어짐');
+  if (f.halation) c.push('빛 번짐');
+  if (f.vignette) c.push('주변부 어둡게');
+  if (f.grain && f.grain[0] >= .035) c.push('굵은 입자');
+  else if (f.grain && f.grain[0] <= .015) c.push('고운 입자');
+  return c;
+}
+
+// ───────── 화면 ─────────
+const $ = s => document.querySelector(s);
+const outC = $('#out'), origC = $('#orig');
+const state = { film: 'portra_400', brand: 'all', strength: 1, grain: 1, img: null, name: 'sample', sample: true };
+try { const s = JSON.parse(localStorage.getItem('film-darkroom') || '{}'); if (BYKEY[s.film]) state.film = s.film; } catch (e) {}
+let previewSrc = null, pw = 0, ph = 0;
+
+function makeSample() {
+  const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+  const x = c.getContext('2d');
+  let gr = x.createLinearGradient(0, 0, 0, 470);
+  gr.addColorStop(0, '#5d97cf'); gr.addColorStop(.7, '#a9cbe3'); gr.addColorStop(1, '#f2cfa6');
+  x.fillStyle = gr; x.fillRect(0, 0, 1200, 470);
+  const sun = x.createRadialGradient(900, 360, 10, 900, 360, 260);
+  sun.addColorStop(0, 'rgba(255,246,214,1)'); sun.addColorStop(.15, 'rgba(255,226,170,.8)'); sun.addColorStop(1, 'rgba(255,200,140,0)');
+  x.fillStyle = sun; x.fillRect(0, 0, 1200, 470);
+  x.fillStyle = 'rgba(255,255,255,.85)';
+  for (const [cx, cy, s] of [[230, 120, 1], [520, 80, .7], [700, 170, .8]]) {
+    for (const [dx, dy, r] of [[0,0,46],[50,-14,56],[105,4,42],[48,18,48]]) { x.beginPath(); x.arc(cx + dx*s, cy + dy*s, r*s, 0, 7); x.fill(); }
+  }
+  x.fillStyle = '#4f8a46'; x.beginPath(); x.moveTo(0, 470); x.quadraticCurveTo(220, 330, 520, 450); x.lineTo(520, 470); x.fill();
+  x.fillStyle = '#3d7139'; x.beginPath(); x.moveTo(0, 470); x.quadraticCurveTo(120, 400, 300, 470); x.fill();
+  gr = x.createLinearGradient(0, 450, 0, 600); gr.addColorStop(0, '#2f78a8'); gr.addColorStop(1, '#4fa4bf');
+  x.fillStyle = gr; x.fillRect(0, 460, 1200, 140);
+  x.fillStyle = 'rgba(255,240,200,.5)'; for (let i = 0; i < 26; i++) x.fillRect(820 + Math.sin(i) * 60, 470 + i * 5, 160 - i * 4, 2);
+  gr = x.createLinearGradient(0, 590, 0, 800); gr.addColorStop(0, '#e8d3a8'); gr.addColorStop(1, '#d2b585');
+  x.fillStyle = gr; x.fillRect(0, 590, 1200, 210);
+  x.fillStyle = '#7a5a3a'; x.fillRect(318, 470, 6, 230);
+  x.fillStyle = '#d63a2f'; x.beginPath(); x.moveTo(170, 500); x.quadraticCurveTo(320, 380, 470, 500); x.fill();
+  x.fillStyle = '#f4f1ea'; x.beginPath(); x.moveTo(270, 500); x.quadraticCurveTo(320, 395, 370, 500); x.fill();
+  x.fillStyle = '#f2c230'; x.fillRect(380, 650, 150, 18); x.fillRect(395, 668, 10, 60); x.fillRect(505, 668, 10, 60); x.fillRect(380, 590, 18, 70);
+  x.fillStyle = '#2b4f7a'; x.fillRect(640, 640, 70, 120);
+  x.fillStyle = '#e04f5f'; x.beginPath(); x.ellipse(675, 610, 52, 70, 0, 0, 7); x.fill();
+  x.fillStyle = '#e2a888'; x.beginPath(); x.arc(675, 515, 36, 0, 7); x.fill();
+  x.fillStyle = '#3a2a22'; x.beginPath(); x.arc(675, 502, 38, Math.PI, 0); x.fill();
+  x.fillStyle = '#e2a888'; x.fillRect(612, 590, 16, 70); x.fillRect(722, 590, 16, 70);
+  x.fillStyle = '#2e9a6b'; x.beginPath(); x.ellipse(1010, 720, 70, 26, 0, 0, 7); x.fill();
+  x.fillStyle = '#ffffff'; x.beginPath(); x.ellipse(1010, 714, 40, 12, 0, 0, 7); x.fill();
+  x.fillStyle = 'rgba(80,60,40,.25)'; x.beginPath(); x.ellipse(675, 765, 80, 12, 0, 0, 7); x.fill();
+  const id = x.getImageData(0, 0, 1200, 800), rr = mulberry(3);
+  for (let i = 0; i < id.data.length; i += 4) { const n = (rr() - .5) * 10; id.data[i] += n; id.data[i+1] += n; id.data[i+2] += n; }
+  x.putImageData(id, 0, 0);
+  return c;
+}
+
+function scaled(img, maxSide) {
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  const s = Math.min(1, maxSide / Math.max(iw, ih));
+  const c = document.createElement('canvas'); c.width = Math.round(iw * s); c.height = Math.round(ih * s);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+
+function setImage(img, name, isSample) {
+  state.img = img; state.name = name; state.sample = isSample;
+  $('#sampleBadge').hidden = !isSample;
+  const c = scaled(img, 1100);
+  pw = c.width; ph = c.height;
+  previewSrc = c.getContext('2d').getImageData(0, 0, pw, ph);
+  for (const cv of [outC, origC]) { cv.width = pw; cv.height = ph; }
+  origC.getContext('2d').putImageData(previewSrc, 0, 0);
+  renderPreview();
+}
+
+function renderPreview() {
+  if (!previewSrc) return;
+  const f = BYKEY[state.film];
+  // 미리보기 입자는 저장본과 같은 크기로 보이도록 원본 크기 기준으로 맞춘다
+  outC.getContext('2d').putImageData(develop(previewSrc, pw, ph, f, state.strength, state.grain), 0, 0);
+}
+
+// 필름 카드 위 두 가지 대표 색
+const SWATCH = {
+  provia: ['#3a7bd5', '#e9e4d8'], velvia: ['#0b8a3e', '#d0103a'], astia: ['#f3c4b0', '#6fa8dc'],
+  classic_chrome: ['#6f7f86', '#a8573f'], classic_neg: ['#2f6f6a', '#c8463c'], nostalgic_neg: ['#d99a3d', '#6b4a2f'],
+  pro_neg_std: ['#d9c2b0', '#8a9aa5'], pro_neg_hi: ['#c99b84', '#4f6573'], eterna: ['#3f5a5c', '#b9a88f'],
+  eterna_bleach_bypass: ['#4a4f52', '#b8b8b2'], reala_ace: ['#e3463a', '#2f7fc1'],
+  acros: ['#111111', '#d8d8d8'], acros_r: ['#000000', '#9a9a9a'], acros_ye: ['#2a2a2a', '#cfcfcf'],
+  acros_g: ['#3a3a3a', '#e6e6e6'], monochrome: ['#2b2b2b', '#e9e9e9'], sepia: ['#5a3d27', '#e8d2ae'],
+  portra_160: ['#f1d3bd', '#c9d6d0'], portra_400: ['#f0b48c', '#f7e3cf'], portra_800: ['#e08a4f', '#7a4a3a'],
+  ektar_100: ['#d7192a', '#1b5fbf'], gold_200: ['#ffb703', '#e26d1f'], colorplus_200: ['#f2c35e', '#b98c72'],
+  ultramax_400: ['#e5332a', '#f5b700'], ektachrome_e100: ['#0d4fa8', '#49b6c9'], kodachrome_64: ['#b5121b', '#e8b04a'],
+  vision3_500t: ['#10243a', '#ff5a45'], tri_x_400: ['#000000', '#bdbdbd'], tmax_100: ['#444444', '#f0f0f0'],
+};
+
+function buildShelf() {
+  const shelf = $('#shelf'); shelf.innerHTML = '';
+  for (const [brand, title] of [['fuji', 'FUJIFILM · 필름 시뮬레이션'], ['kodak', 'KODAK · 필름']]) {
+    if (state.brand !== 'all' && state.brand !== brand) continue;
+    const gt = document.createElement('div'); gt.className = 'group-title'; gt.textContent = title; shelf.append(gt);
+    for (const f of FILMS.filter(f => f.b === brand)) {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'film'; btn.dataset.k = f.k;
+      btn.setAttribute('aria-pressed', f.k === state.film);
+      btn.innerHTML = `<div class="sw"></div><span class="ko"></span><span class="tag"></span>`;
+      const sw = SWATCH[f.k];
+      btn.querySelector('.sw').style.background = `linear-gradient(90deg, ${sw[0]} 0 55%, ${sw[1]} 55%)`;
+      btn.querySelector('.ko').textContent = f.ko;
+      btn.querySelector('.tag').textContent = f.tag;
+      btn.addEventListener('click', () => selectFilm(f.k));
+      shelf.append(btn);
+    }
+  }
+}
+
+function meterRow(label, left, right, v, cls = '') {
+  return `<div class="meter-row"><div class="meter-head"><span>${left}</span><b>${label}</b><span>${right}</span></div>
+    <div class="meter ${cls}"><i style="left:${(v * 100).toFixed(1)}%"></i></div></div>`;
+}
+
+function showInfo() {
+  const f = BYKEY[state.film], t = traits(f);
+  $('#infoBrand').textContent = f.b === 'fuji' ? 'FUJIFILM 필름 시뮬레이션' : 'KODAK 필름';
+  $('#infoName').textContent = f.ko;
+  $('#infoKey').textContent = f.k;
+  $('#infoDesc').textContent = f.desc;
+  $('#infoScene').innerHTML = '<b>어울리는 장면</b> · ';
+  $('#infoScene').append(f.scene);
+  const satLabel = t.mono ? '흑백' : '채도 · ' + word(t.sat, ['아주 낮음', '낮음', '보통', '높음', '아주 높음']);
+  $('#meters').innerHTML =
+    meterRow(satLabel, '담백', '쨍함', t.sat) +
+    meterRow('대비 · ' + word(t.contrast, ['아주 부드러움', '부드러움', '보통', '강함', '아주 강함']), '부드러움', '강함', t.contrast) +
+    meterRow('색온도 · ' + (t.warm < .42 ? '차가움' : t.warm > .58 ? '따뜻함' : '중립'), '차가움', '따뜻함', t.warm, 'temp') +
+    meterRow('입자 · ' + (t.grain === 0 ? '없음' : word(t.grain, ['고움', '조금', '보통', '굵음'])), '매끈', '거침', t.grain);
+  $('#chips').innerHTML = '';
+  for (const c of chipsFor(f, t)) { const s = document.createElement('span'); s.className = 'chip'; s.textContent = c; $('#chips').append(s); }
+  $('#edgeTop').textContent = f.en;
+  const num = FILMS.indexOf(f) + 1;
+  $('#edgeNum').textContent = '▸ ' + num;
+  $('#edgeBottom').textContent = num + 'A';
+}
+
+function selectFilm(k) {
+  state.film = k;
+  try { localStorage.setItem('film-darkroom', JSON.stringify({ film: k })); } catch (e) {}
+  document.querySelectorAll('.film').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  showInfo(); renderPreview();
+  $('#note').textContent = '';
+}
+
+// 사진 열기
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) { $('#note').textContent = '이미지 파일만 열 수 있어요.'; return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => { setImage(img, file.name.replace(/\.[^.]+$/, ''), false); $('#note').textContent = ''; };
+  img.onerror = () => { $('#note').textContent = '이 사진은 열 수 없어요. HEIC라면 JPG로 바꿔서 열어 주세요.'; };
+  img.src = url;
+}
+$('#openBtn').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+const strip = $('#strip');
+strip.addEventListener('dragover', e => { e.preventDefault(); strip.classList.add('drop'); });
+strip.addEventListener('dragleave', () => strip.classList.remove('drop'));
+strip.addEventListener('drop', e => { e.preventDefault(); strip.classList.remove('drop'); loadFile(e.dataTransfer.files[0]); });
+document.addEventListener('paste', e => { const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/')); if (it) loadFile(it.getAsFile()); });
+
+// 비교
+function setSplit(v) {
+  origC.style.setProperty('--split', v + '%');
+  const line = $('#splitLine');
+  line.style.display = v > 0 && v < 100 ? 'block' : 'none';
+  const r = outC.getBoundingClientRect(), fr = $('#frame').getBoundingClientRect();
+  line.style.left = (r.left - fr.left + r.width * v / 100 - 1) + 'px';
+}
+$('#split').addEventListener('input', e => setSplit(+e.target.value));
+const frame = $('#frame');
+frame.addEventListener('pointerdown', () => setSplit(100));
+for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) frame.addEventListener(ev, () => setSplit(+$('#split').value));
+addEventListener('resize', () => setSplit(+$('#split').value));
+
+// 강도·입자
+let rafPending = false;
+function schedule() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; renderPreview(); }); }
+$('#strength').addEventListener('input', e => { state.strength = e.target.value / 100; $('#strengthOut').textContent = e.target.value + '%'; schedule(); });
+$('#grain').addEventListener('input', e => { state.grain = e.target.value / 100; $('#grainOut').textContent = e.target.value + '%'; schedule(); });
+
+// 브랜드 탭
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  state.brand = b.dataset.brand;
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  buildShelf();
+}));
+
+// 저장 (원본 크기로 현상)
+let downloadsApi;
+if (window.claude && typeof window.claude.use === 'function') {
+  downloadsApi = window.claude.use('downloads').catch(() => null);
+}
+$('#saveBtn').addEventListener('click', async () => {
+  if (!state.img) return;
+  const btn = $('#saveBtn'); btn.disabled = true; $('#busy').hidden = false; $('#note').textContent = '';
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const c = scaled(state.img, 6000), w = c.width, h = c.height, ctx = c.getContext('2d');
+    ctx.putImageData(develop(ctx.getImageData(0, 0, w, h), w, h, BYKEY[state.film], state.strength, state.grain), 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .95));
+    const filename = `${state.name}_${state.film}.jpg`;
+    if (downloadsApi) {
+      const api = await downloadsApi;
+      if (!api) { $('#note').textContent = '이 화면에서는 저장할 수 없어요. 미리보기 사진을 길게 누르거나 오른쪽 클릭해서 저장해 주세요.'; return; }
+      try { await api.save({ filename, data: blob }); $('#note').textContent = `${filename} 저장했어요.`; }
+      catch (e) { $('#note').textContent = e && e.code === 'declined' ? '저장을 취소했어요.' : '저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
+    } else {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      $('#note').textContent = `${filename} 저장했어요.`;
+    }
+  } finally { btn.disabled = false; $('#busy').hidden = true; }
+});
+
+buildShelf();
+showInfo();
+setImage(makeSample(), 'sample', true);
+</script>
+</body>
+</html>
