@@ -40,6 +40,7 @@
   --edge: #f0994c;
   --focus: #1f6feb;
   --star: #d99a00;
+  --danger: #d23b2f;
   --display: 'Black Han Sans', 'Malgun Gothic', sans-serif;
   --body: 'IBM Plex Sans KR', -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
@@ -148,6 +149,7 @@ h1 small { display: block; font-family: var(--mono); font-size: 12px; letter-spa
 .mini { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
 .mini:hover { border-color: var(--muted); }
 .mini:disabled { opacity: .45; cursor: default; }
+.mini.danger:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
 kbd { font-family: var(--mono); font-size: 10px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--muted); }
 .tray { display: flex; gap: 10px; overflow-x: auto; padding: 8px 4px 6px; }
 .shot { position: relative; flex: 0 0 auto; width: 112px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); padding: 4px; cursor: pointer; display: grid; gap: 3px; text-align: left; }
@@ -254,10 +256,11 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
             <button type="button" class="mini" id="pasteBtn">붙여넣기 <kbd>Alt+V</kbd></button>
             <button type="button" class="mini" id="pasteAllBtn">모든 사진에 붙여넣기</button>
             <button type="button" class="mini" id="selAllBtn">전체 선택</button>
+            <button type="button" class="mini danger" id="delBtn">삭제 <kbd>Del</kbd></button>
           </div>
         </div>
         <div class="tray" id="tray"></div>
-        <p class="tray-help" id="trayHelp">사진을 누르면 그 사진을 편집해요. 설정을 복사(Alt+C)한 뒤 다른 사진을 체크하고 붙여넣기(Alt+V)하면 같은 필름·보정값이 들어가요. 사진을 오른쪽 클릭해도 돼요.</p>
+        <p class="tray-help" id="trayHelp">사진을 누르면 그 사진을 편집해요. 설정을 복사(Alt+C)한 뒤 다른 사진을 체크하고 붙여넣기(Alt+V)하면 같은 필름·보정값이 들어가요. 삭제(Del)는 체크한 사진을, 체크한 게 없으면 지금 사진을 목록에서 빼요. 사진을 오른쪽 클릭해도 돼요.</p>
       </div>
     </div>
 
@@ -742,6 +745,9 @@ function updateTrayButtons() {
   $('#pasteBtn').disabled = !clip;
   $('#pasteAllBtn').disabled = !clip || photos.length < 2;
   $('#selAllBtn').textContent = photos.length && photos.every(p => p.checked) ? '선택 해제' : '전체 선택';
+  const nChecked = photos.filter(p => p.checked).length;
+  $('#delBtn').disabled = photos.every(p => p.sample);
+  $('#delBtn').firstChild.textContent = nChecked ? `${nChecked}장 삭제 ` : '삭제 ';
 }
 
 let toastTimer;
@@ -781,7 +787,8 @@ function openMenu(x, y, i) {
     ['이 사진에 붙여넣기', 'Alt+V', () => pasteSettings([i]), !!clip],
     [`체크한 ${checked}장에 붙여넣기`, '', () => pasteSettings(), !!clip && checked > 0],
     ['모든 사진에 붙여넣기', '', () => pasteSettings(photos.map((_, k) => k)), !!clip],
-    ['목록에서 빼기', '', () => removePhoto(i), photos.length > 1],
+    [checked > 1 && photos[i].checked ? `체크한 ${checked}장 삭제` : '이 사진 삭제', 'Del',
+      () => removePhotos(checked > 1 && photos[i].checked ? null : [i]), !photos[i].sample],
   ];
   for (const [label, key, fn, ok] of items) {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.disabled = !ok;
@@ -805,13 +812,29 @@ document.addEventListener('keydown', e => {
   else if (e.code === 'KeyV') { e.preventDefault(); pasteSettings(); }
 });
 
-function removePhoto(i) {
-  if (photos.length < 2) return;
+// 삭제: 지정한 사진, 없으면 체크한 사진, 그것도 없으면 지금 사진. 다 지우면 예시 사진으로 돌아감
+function removePhotos(targets) {
+  if (!targets) { targets = photos.map((p, i) => p.checked ? i : -1).filter(i => i >= 0); if (!targets.length) targets = [cur]; }
+  targets = targets.filter(i => i >= 0 && !photos[i].sample);
+  if (!targets.length) return;
   if (cur >= 0) photos[cur].s = snap();
-  photos.splice(i, 1);
-  const next = Math.min(i === cur ? i : (i < cur ? cur - 1 : cur), photos.length - 1);
+  const curPhoto = photos[cur], gone = new Set(targets.map(i => photos[i]));
+  const n = gone.size;
+  const left = photos.filter(p => !gone.has(p));
+  photos.length = 0; photos.push(...left);
+  if (!photos.length) { cur = -1; addPhotos([{ img: makeSample(), name: 'sample' }], true); toast(`${n}장 삭제함`); return; }
+  let next = photos.indexOf(curPhoto);
+  if (next < 0) next = Math.min(Math.min(...targets), photos.length - 1);
   cur = -1; selectPhoto(next);
+  toast(`${n}장 삭제함`);
 }
+$('#delBtn').addEventListener('click', () => removePhotos());
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Delete' || e.altKey || e.ctrlKey || e.metaKey) return;
+  const t = e.target;
+  if (t && (t.matches('input:not([type=checkbox]), textarea, select') || t.isContentEditable)) return;
+  e.preventDefault(); closeMenu(); removePhotos();
+});
 
 $('#copyBtn').addEventListener('click', () => copySettings());
 $('#pasteBtn').addEventListener('click', () => pasteSettings());
