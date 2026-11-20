@@ -129,6 +129,47 @@ h1 small { display: block; font-family: var(--mono); font-size: 12px; letter-spa
 .ctrl label { display: grid; grid-template-columns: 64px 1fr 40px; align-items: center; gap: 10px; font-size: 13px; }
 .ctrl input[type=range] { accent-color: var(--accent); width: 100%; }
 .ctrl output { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tray-box { margin-top: 16px; display: grid; gap: 10px; }
+.tray-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.tray-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.mini { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.mini:hover { border-color: var(--muted); }
+.mini:disabled { opacity: .45; cursor: default; }
+kbd { font-family: var(--mono); font-size: 10px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--muted); }
+.tray { display: flex; gap: 10px; overflow-x: auto; padding: 8px 4px 6px; }
+.shot { position: relative; flex: 0 0 auto; width: 112px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); padding: 4px; cursor: pointer; display: grid; gap: 3px; text-align: left; }
+.shot.current { border-color: var(--accent); }
+.shot.checked { box-shadow: 0 0 0 3px var(--focus); }
+.shot canvas { width: 100%; height: 72px; object-fit: cover; border-radius: 6px; display: block; background: var(--film); }
+.shot .nm { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shot .fm { font-size: 10px; color: var(--muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shot input { position: absolute; top: 7px; left: 7px; width: 17px; height: 17px; margin: 0; accent-color: var(--focus); cursor: pointer; }
+.tray-help { margin: 0; font-size: 12px; color: var(--muted); }
+.menu { position: fixed; z-index: 50; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 5px; display: grid; min-width: 190px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.menu button { border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; gap: 12px; }
+.menu button:hover:not(:disabled) { background: var(--bg); }
+.menu button:disabled { opacity: .4; cursor: default; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: 13px; z-index: 60; pointer-events: none; }
+.adj { border-top: 1px solid var(--line); padding-top: 12px; position: relative; }
+.adj .auto { position: absolute; top: 9px; right: 0; }
+.adj summary { cursor: pointer; font-weight: 600; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 8px; }
+.adj summary::-webkit-details-marker { display: none; }
+.adj summary::before { content: "›"; display: inline-block; transition: transform .15s; color: var(--muted); font-size: 16px; }
+.adj[open] summary::before { transform: rotate(90deg); }
+.adj-list { display: grid; gap: 10px; margin-top: 12px; }
+.adj-row { display: grid; gap: 4px; }
+.adj-row .head { display: flex; justify-content: space-between; font-size: 13px; }
+.adj-row output { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.adj-row.changed .head span { font-weight: 600; }
+.adj-row.changed output { color: var(--ink); }
+.adj input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--meter); margin: 6px 0; }
+.adj input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 2px solid var(--ink); cursor: pointer; }
+.adj input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--ink); cursor: pointer; }
+.adj input.t-temp { background: linear-gradient(90deg, #3d76c9, #c9c3a2 50%, #d9b21f); }
+.adj input.t-tint { background: linear-gradient(90deg, #3aa64a, #b9b3b9 50%, #c43fbf); }
+.adj input.t-sat { background: linear-gradient(90deg, #8a8a8a, #d4c23a 50%, #e0402e); }
+.reset { justify-self: start; border: 1px solid var(--line); background: none; border-radius: 999px; padding: 5px 12px; font-size: 12px; color: var(--muted); cursor: pointer; }
+.reset:hover { color: var(--ink); border-color: var(--muted); }
 .note { font-size: 12px; color: var(--muted); margin: 0; min-height: 1.4em; }
 
 /* 필름 선반 */
@@ -165,11 +206,13 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
       <p class="lead">사진을 올리고 필름을 고르면 그 필름으로 찍은 것처럼 색이 바뀌어요. 사진은 이 화면 안에서만 처리되고 어디에도 올라가지 않아요.</p>
     </div>
     <div class="actions">
-      <input type="file" id="file" accept="image/*" hidden>
+      <input type="file" id="file" accept="image/*" multiple hidden>
       <button class="btn" id="openBtn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3M12 4v12M7 9l5-5 5 5"/></svg>사진 열기</button>
       <button class="btn primary" id="saveBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>현상해서 저장</button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>이 사진 저장</button>
+      <button class="btn" id="saveAllBtn" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v13H4zM9 3h6v4H9zM12 10v7M9 14l3 3 3-3"/></svg>전체 저장 (ZIP)</button>
     </div>
   </header>
 
@@ -188,7 +231,20 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
       </div>
       <div class="under">
         <label for="split">원본 비교 <input type="range" id="split" min="0" max="100" value="0"></label>
-        <span>사진을 누르고 있으면 원본이 보여요 · 끌어다 놓기·붙여넣기도 돼요</span>
+        <span>사진을 누르고 있으면 원본이 보여요 · 여러 장 끌어다 놓기도 돼요</span>
+      </div>
+      <div class="tray-box">
+        <div class="tray-head">
+          <b>사진 <span id="count">1</span>장</b>
+          <div class="tray-actions">
+            <button type="button" class="mini" id="copyBtn">설정 복사 <kbd>Alt+C</kbd></button>
+            <button type="button" class="mini" id="pasteBtn">붙여넣기 <kbd>Alt+V</kbd></button>
+            <button type="button" class="mini" id="pasteAllBtn">모든 사진에 붙여넣기</button>
+            <button type="button" class="mini" id="selAllBtn">전체 선택</button>
+          </div>
+        </div>
+        <div class="tray" id="tray"></div>
+        <p class="tray-help" id="trayHelp">사진을 누르면 그 사진을 편집해요. 설정을 복사(Alt+C)한 뒤 다른 사진을 체크하고 붙여넣기(Alt+V)하면 같은 필름·보정값이 들어가요. 사진을 오른쪽 클릭해도 돼요.</p>
       </div>
     </div>
 
@@ -209,6 +265,17 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
         <label for="strength">강도 <input type="range" id="strength" min="0" max="100" value="100"><output id="strengthOut">100%</output></label>
         <label for="grain">입자 <input type="range" id="grain" min="0" max="200" value="100"><output id="grainOut">100%</output></label>
       </div>
+      <details class="adj" open>
+        <summary>빛</summary>
+        <button type="button" class="mini auto" id="autoLight">자동</button>
+        <div class="adj-list" id="adjLight"></div>
+      </details>
+      <details class="adj" open>
+        <summary>색</summary>
+        <button type="button" class="mini auto" id="autoColor">자동</button>
+        <div class="adj-list" id="adjColor"></div>
+      </details>
+      <button type="button" class="reset" id="adjReset">빛·색 초기화</button>
       <p class="note" id="note"></p>
     </aside>
   </section>
@@ -372,7 +439,12 @@ function boxBlur(a, w, h, r, passes = 3) {
   return a;
 }
 
-function develop(src, w, h, f, strength = 1, grainScale = 1) {
+function develop(src, w, h, f, strength = 1, grainScale = 1, adj = null) {
+  const A = adj || {};
+  const useAdj = Object.values(A).some(v => v);
+  const ex = Math.pow(2, A.exp || 0), at = (A.temp || 0) / 100, atn = (A.tint || 0) / 100, ac = (A.contrast || 0) / 100;
+  const ah = (A.hi || 0) / 100, as = (A.sh || 0) / 100, aw = (A.wh || 0) / 100, ab = (A.bl || 0) / 100;
+  const av = (A.vib || 0) / 100, asat = (A.sat || 0) / 100;
   const d = src.data, N = w * h, out = new Float32Array(N * 3);
   const [temp, tint] = f.wb || [0, 0];
   const kr = 1 + temp * .25, kg = 1 - tint * .15, kb = 1 - temp * .25;
@@ -380,7 +452,29 @@ function develop(src, w, h, f, strength = 1, grainScale = 1) {
   const sh = f.shadow, hi = f.highlight, tone = f.tone || [0,0,0], mono = f.mono;
   const useHsv = bands.length || chrome;
   for (let i = 0, j = 0; i < N; i++, j += 4) {
-    let r = d[j] / 255 * kr, g = d[j+1] / 255 * kg, b = d[j+2] / 255 * kb;
+    let r = d[j] / 255, g = d[j+1] / 255, b = d[j+2] / 255;
+    // 기본 보정 (빛·색) — 필름을 입히기 전에 적용
+    if (useAdj) {
+      r *= ex * (1 + at * .3); g *= ex * (1 - atn * .2); b *= ex * (1 - at * .3);
+      const y0 = .2126*r + .7152*g + .0722*b;
+      let y = y0;
+      if (ac) y = .5 + (y - .5) * (1 + ac * .6);
+      if (ah) { const w = clamp((y - .4) / .6); y += ah * .25 * w * w; }
+      if (as) { const w = clamp((.6 - y) / .6); y += as * .25 * w * w; }
+      if (aw) { const c = clamp(y); y += aw * .2 * c * c * c; }
+      if (ab) { const c = clamp(1 - y); y += ab * .12 * c * c * c; }
+      if (y0 > .02) { const k = Math.max(0, y) / y0; r *= k; g *= k; b *= k; }
+      else { const dd = y - y0; r += dd; g += dd; b += dd; }
+      if (av || asat) {
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), s = mx > 0 ? (mx - mn) / mx : 0;
+        const k = Math.max(0, (1 + asat) * (1 + av * (1 - s)));
+        const yy = .2126*r + .7152*g + .0722*b;
+        r = yy + (r - yy) * k; g = yy + (g - yy) * k; b = yy + (b - yy) * k;
+      }
+      r = clamp(r); g = clamp(g); b = clamp(b);
+    }
+    const br = r, bgc = g, bb = b;
+    r *= kr; g *= kg; b *= kb;
     if (mono) {
       const y = lk(f.L, clamp(r*mono[0] + g*mono[1] + b*mono[2]));
       const tw = 1 - Math.abs(2*y - 1);
@@ -418,6 +512,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1) {
       if (sh) { const ws = (1 - y2) * (1 - y2) * 2.5; r += sh[0]*ws; g += sh[1]*ws; b += sh[2]*ws; }
       if (hi) { const wh = y2 * y2 * 2.5; r += hi[0]*wh; g += hi[1]*wh; b += hi[2]*wh; }
     }
+    if (strength !== 1) { r = br + (r - br) * strength; g = bgc + (g - bgc) * strength; b = bb + (b - bb) * strength; }
     out[i*3] = r; out[i*3+1] = g; out[i*3+2] = b;
   }
   const big = Math.max(w, h);
@@ -425,7 +520,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1) {
     const m = new Float32Array(N);
     for (let i = 0; i < N; i++) m[i] = clamp((.2126*out[i*3] + .7152*out[i*3+1] + .0722*out[i*3+2] - .72) / .28);
     boxBlur(m, w, h, Math.max(1, Math.round(big / 120 / 1.7)));
-    for (let i = 0; i < N; i++) { const a = m[i] * f.halation; out[i*3] += a; out[i*3+1] += a * .35; out[i*3+2] += a * .15; }
+    for (let i = 0; i < N; i++) { const a = m[i] * f.halation * strength; out[i*3] += a; out[i*3+1] += a * .35; out[i*3+2] += a * .15; }
   }
   if (f.vignette) {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -447,7 +542,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1) {
       let ss = 0; for (let i = 0; i < N; i++) ss += nz[i] * nz[i];
       const sd = Math.sqrt(ss / N) || 1; for (let i = 0; i < N; i++) nz[i] /= sd;
     }
-    const a = amt * grainScale;
+    const a = amt * grainScale * strength;
     for (let i = 0; i < N; i++) {
       const y = clamp(.2126*out[i*3] + .7152*out[i*3+1] + .0722*out[i*3+2]);
       const n = nz[i] * a * (.35 + 2.6 * y * (1 - y));
@@ -457,9 +552,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1) {
   const res = new ImageData(w, h), o = res.data;
   for (let i = 0, j = 0; i < N; i++, j += 4) {
     for (let c = 0; c < 3; c++) {
-      let v = clamp(out[i*3 + c]);
-      if (strength !== 1) v = d[j+c] / 255 + (v - d[j+c] / 255) * strength;
-      o[j+c] = v * 255 + .5;
+      o[j+c] = clamp(out[i*3 + c]) * 255 + .5;
     }
     o[j+3] = 255;
   }
@@ -553,23 +646,252 @@ function scaled(img, maxSide) {
   return c;
 }
 
-function setImage(img, name, isSample) {
-  state.img = img; state.name = name; state.sample = isSample;
-  $('#sampleBadge').hidden = !isSample;
-  const c = scaled(img, 1100);
-  pw = c.width; ph = c.height;
-  previewSrc = c.getContext('2d').getImageData(0, 0, pw, ph);
+// ───────── 여러 장 사진 ─────────
+// 사진마다 자기 설정(필름·강도·입자·빛·색)을 따로 가진다
+const photos = [];
+let cur = -1, clip = null;
+const snap = () => ({ film: state.film, strength: state.strength, grain: state.grain, adj: { ...state.adj } });
+const cloneS = s => ({ ...s, adj: { ...s.adj } });
+
+function addPhotos(items, isSample = false) {
+  if (!isSample && photos.length && photos.every(p => p.sample)) { photos.length = 0; cur = -1; }
+  const base = cur >= 0 ? { ...snap(), adj: Object.fromEntries(Object.keys(state.adj || {}).map(k => [k, 0])), strength: 1, grain: 1 } : null;
+  const start = photos.length;
+  for (const it of items) {
+    const t = scaled(it.img, 220);
+    photos.push({ img: it.img, name: it.name, sample: isSample, s: base ? cloneS(base) : null,
+                  thumb: t.getContext('2d').getImageData(0, 0, t.width, t.height), tw: t.width, th: t.height, checked: false });
+  }
+  cur = -1;
+  selectPhoto(start);
+}
+
+function selectPhoto(i) {
+  if (cur >= 0 && photos[cur]) photos[cur].s = snap();
+  cur = i;
+  const p = photos[i];
+  $('#sampleBadge').hidden = !p.sample;
+  if (!p.prev) { const c = scaled(p.img, 1100); p.prev = c.getContext('2d').getImageData(0, 0, c.width, c.height); }
+  previewSrc = p.prev; pw = p.prev.width; ph = p.prev.height;
   for (const cv of [outC, origC]) { cv.width = pw; cv.height = ph; }
   origC.getContext('2d').putImageData(previewSrc, 0, 0);
+  if (!p.s) p.s = snap();
+  applySettings(p.s);
+  buildTray();
+}
+
+// 설정값을 화면(슬라이더·필름 선택)에 반영
+function applySettings(s) {
+  state.film = s.film; state.strength = s.strength; state.grain = s.grain;
+  $('#strength').value = Math.round(s.strength * 100); $('#strengthOut').textContent = Math.round(s.strength * 100) + '%';
+  $('#grain').value = Math.round(s.grain * 100); $('#grainOut').textContent = Math.round(s.grain * 100) + '%';
+  if (typeof ADJ !== 'undefined') ADJ.forEach(a => a.set && a.set(s.adj[a.k] || 0, true));
+  document.querySelectorAll('.film').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === s.film));
+  showInfo();
   renderPreview();
 }
 
+function renderShot(i) {
+  const p = photos[i], cv = document.querySelector(`.shot[data-i="${i}"] canvas`);
+  if (!cv || !p.s) return;
+  cv.width = p.tw; cv.height = p.th;
+  cv.getContext('2d').putImageData(develop(p.thumb, p.tw, p.th, BYKEY[p.s.film], p.s.strength, p.s.grain * .5, p.s.adj), 0, 0);
+  const fm = cv.parentElement.querySelector('.fm'); if (fm) fm.textContent = BYKEY[p.s.film].ko;
+}
+
+function buildTray() {
+  const tray = $('#tray'); tray.innerHTML = '';
+  photos.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'shot' + (i === cur ? ' current' : '') + (p.checked ? ' checked' : '');
+    d.dataset.i = i; d.tabIndex = 0; d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', `${p.name} 편집하기`);
+    d.innerHTML = `<input type="checkbox" aria-label="붙여넣을 사진으로 선택"><canvas></canvas><span class="nm"></span><span class="fm"></span>`;
+    d.querySelector('.nm').textContent = p.sample ? '예시 사진' : p.name;
+    const cb = d.querySelector('input'); cb.checked = p.checked;
+    cb.addEventListener('click', e => { e.stopPropagation(); p.checked = cb.checked; d.classList.toggle('checked', p.checked); updateTrayButtons(); });
+    d.addEventListener('click', () => { if (i !== cur) selectPhoto(i); });
+    d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (i !== cur) selectPhoto(i); } });
+    d.addEventListener('contextmenu', e => { e.preventDefault(); openMenu(e.clientX, e.clientY, i); });
+    tray.append(d);
+  });
+  photos.forEach((_, i) => renderShot(i));
+  $('#count').textContent = photos.length;
+  $('#saveAllBtn').hidden = photos.length < 2;
+  updateTrayButtons();
+}
+function updateTrayButtons() {
+  $('#pasteBtn').disabled = !clip;
+  $('#pasteAllBtn').disabled = !clip || photos.length < 2;
+  $('#selAllBtn').textContent = photos.length && photos.every(p => p.checked) ? '선택 해제' : '전체 선택';
+}
+
+let toastTimer;
+function toast(msg) {
+  let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 1800);
+}
+
+function copySettings(i = cur) {
+  if (i < 0) return;
+  if (i === cur) photos[cur].s = snap();
+  clip = cloneS(photos[i].s);
+  updateTrayButtons();
+  toast(`설정 복사함 · ${BYKEY[clip.film].ko}`);
+}
+// 붙여넣을 곳: 체크한 사진이 있으면 그 사진들, 없으면 지금 사진
+function pasteSettings(targets) {
+  if (!clip) { toast('먼저 Alt+C로 설정을 복사해 주세요'); return; }
+  if (!targets) { targets = photos.map((p, i) => p.checked ? i : -1).filter(i => i >= 0); if (!targets.length) targets = [cur]; }
+  for (const i of targets) {
+    photos[i].s = cloneS(clip);
+    if (i === cur) applySettings(photos[i].s);
+    renderShot(i);
+  }
+  toast(`${targets.length}장에 붙여넣음`);
+}
+
+let menuEl = null;
+function closeMenu() { if (menuEl) { menuEl.remove(); menuEl = null; } }
+function openMenu(x, y, i) {
+  closeMenu();
+  const checked = photos.filter(p => p.checked).length;
+  menuEl = document.createElement('div'); menuEl.className = 'menu'; menuEl.setAttribute('role', 'menu');
+  const items = [
+    ['이 사진 설정 복사', 'Alt+C', () => copySettings(i), true],
+    ['이 사진에 붙여넣기', 'Alt+V', () => pasteSettings([i]), !!clip],
+    [`체크한 ${checked}장에 붙여넣기`, '', () => pasteSettings(), !!clip && checked > 0],
+    ['모든 사진에 붙여넣기', '', () => pasteSettings(photos.map((_, k) => k)), !!clip],
+    ['목록에서 빼기', '', () => removePhoto(i), photos.length > 1],
+  ];
+  for (const [label, key, fn, ok] of items) {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.disabled = !ok;
+    b.innerHTML = `<span></span><kbd hidden></kbd>`;
+    b.querySelector('span').textContent = label;
+    if (key) { const k = b.querySelector('kbd'); k.hidden = false; k.textContent = key; }
+    b.addEventListener('click', () => { closeMenu(); fn(); });
+    menuEl.append(b);
+  }
+  document.body.append(menuEl);
+  const r = menuEl.getBoundingClientRect();
+  menuEl.style.left = Math.min(x, innerWidth - r.width - 8) + 'px';
+  menuEl.style.top = Math.min(y, innerHeight - r.height - 8) + 'px';
+  menuEl.querySelector('button:not(:disabled)')?.focus();
+}
+document.addEventListener('pointerdown', e => { if (menuEl && !menuEl.contains(e.target)) closeMenu(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMenu();
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.code === 'KeyC') { e.preventDefault(); copySettings(); }
+  else if (e.code === 'KeyV') { e.preventDefault(); pasteSettings(); }
+});
+
+function removePhoto(i) {
+  if (photos.length < 2) return;
+  if (cur >= 0) photos[cur].s = snap();
+  photos.splice(i, 1);
+  const next = Math.min(i === cur ? i : (i < cur ? cur - 1 : cur), photos.length - 1);
+  cur = -1; selectPhoto(next);
+}
+
+$('#copyBtn').addEventListener('click', () => copySettings());
+$('#pasteBtn').addEventListener('click', () => pasteSettings());
+$('#pasteAllBtn').addEventListener('click', () => pasteSettings(photos.map((_, k) => k)));
+$('#selAllBtn').addEventListener('click', () => {
+  const all = photos.every(p => p.checked);
+  photos.forEach(p => { p.checked = !all; });
+  buildTray();
+});
+
+let shotTimer;
 function renderPreview() {
   if (!previewSrc) return;
   const f = BYKEY[state.film];
-  // 미리보기 입자는 저장본과 같은 크기로 보이도록 원본 크기 기준으로 맞춘다
-  outC.getContext('2d').putImageData(develop(previewSrc, pw, ph, f, state.strength, state.grain), 0, 0);
+  outC.getContext('2d').putImageData(develop(previewSrc, pw, ph, f, state.strength, state.grain, state.adj), 0, 0);
+  if (cur >= 0 && photos[cur]) {
+    photos[cur].s = snap();
+    clearTimeout(shotTimer); const i = cur; shotTimer = setTimeout(() => renderShot(i), 200);
+  }
 }
+
+// 빛·색 슬라이더
+const ADJ = [
+  { k: 'exp', g: 'light', label: '노출', min: -3, max: 3, step: .05 },
+  { k: 'contrast', g: 'light', label: '대비' },
+  { k: 'hi', g: 'light', label: '밝은 영역' },
+  { k: 'sh', g: 'light', label: '어두운 영역' },
+  { k: 'wh', g: 'light', label: '흰색 계열' },
+  { k: 'bl', g: 'light', label: '검정 계열' },
+  { k: 'temp', g: 'color', label: '색온도', cls: 't-temp' },
+  { k: 'tint', g: 'color', label: '색조', cls: 't-tint' },
+  { k: 'vib', g: 'color', label: '생동감', cls: 't-sat' },
+  { k: 'sat', g: 'color', label: '채도', cls: 't-sat' },
+];
+state.adj = Object.fromEntries(ADJ.map(a => [a.k, 0]));
+const fmtAdj = (a, v) => v === 0 ? '0' : (v > 0 ? '+' : '') + (a.k === 'exp' ? v.toFixed(2) : v);
+function buildAdj() {
+  for (const a of ADJ) {
+    const row = document.createElement('div'); row.className = 'adj-row';
+    const id = 'adj-' + a.k;
+    row.innerHTML = `<label class="head" for="${id}"><span></span><output></output></label>
+      <input type="range" id="${id}" min="${a.min ?? -100}" max="${a.max ?? 100}" step="${a.step ?? 1}" value="0" class="${a.cls || ''}" title="두 번 누르면 0으로">`;
+    row.querySelector('span').textContent = a.label;
+    const input = row.querySelector('input'), out = row.querySelector('output');
+    const set = v => {
+      state.adj[a.k] = v; input.value = v; out.textContent = fmtAdj(a, v);
+      row.classList.toggle('changed', v !== 0); schedule();
+    };
+    a.set = set;
+    input.addEventListener('input', () => set(+input.value));
+    input.addEventListener('dblclick', () => set(0));
+    out.textContent = '0';
+    $(a.g === 'light' ? '#adjLight' : '#adjColor').append(row);
+  }
+}
+buildAdj();
+$('#adjReset').addEventListener('click', () => ADJ.forEach(a => a.set(0)));
+
+// 자동: 지금 사진을 분석해서 빛·색 값을 맞춘다
+function analyze(src) {
+  const d = src.data, n = d.length / 4, step = Math.max(1, Math.floor(n / 60000));
+  const hist = new Uint32Array(256); let R = 0, G = 0, B = 0, S = 0, cnt = 0;
+  for (let i = 0; i < n; i += step) {
+    const j = i * 4, r = d[j], g = d[j+1], b = d[j+2];
+    hist[Math.round(.2126*r + .7152*g + .0722*b)]++;
+    R += r; G += g; B += b; const mx = Math.max(r, g, b); S += mx ? (mx - Math.min(r, g, b)) / mx : 0; cnt++;
+  }
+  const pct = q => { let acc = 0; const target = q * cnt; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= target) return v / 255; } return 1; };
+  let mean = 0, sq = 0;
+  for (let v = 0; v < 256; v++) { mean += v / 255 * hist[v]; sq += (v / 255) ** 2 * hist[v]; }
+  mean /= cnt; const sd = Math.sqrt(Math.max(0, sq / cnt - mean * mean));
+  return { mean, sd, p005: pct(.005), p05: pct(.05), p99: pct(.99), p995: pct(.995), R: R / cnt, G: G / cnt, B: B / cnt, sat: S / cnt };
+}
+const cl = (v, lo, hi) => Math.round(Math.min(hi, Math.max(lo, v)));
+function autoLight() {
+  const a = analyze(previewSrc);
+  const exp = Math.max(-1.5, Math.min(1.5, Math.log2(.46 / Math.max(a.mean, .02)) * .8));
+  const vals = {
+    exp: Math.round(exp * 20) / 20,
+    contrast: cl((.22 - a.sd) / .22 * 80, -30, 40),
+    hi: a.p99 > .9 ? cl(-(a.p99 - .85) * 350, -70, 0) : 0,
+    sh: a.p05 < .12 ? cl((.14 - a.p05) * 300, 0, 50) : 0,
+    wh: cl((.95 - a.p995) * 150, -30, 40),
+    bl: a.p005 > .05 ? cl(-(a.p005 - .03) * 300, -40, 0) : cl((.015 - a.p005) * 400, 0, 15),
+  };
+  for (const [k, v] of Object.entries(vals)) ADJ.find(x => x.k === k).set(v);
+  toast('빛을 자동으로 맞췄어요');
+}
+function autoColor() {
+  const a = analyze(previewSrc);
+  const t = (a.B - a.R) / (.3 * Math.max(a.R + a.B, 1)) * .5;
+  const tn = (1 - (a.R + a.B) / 2 / Math.max(a.G, 1)) / .2 * .5;
+  const vals = { temp: cl(t * 100, -40, 40), tint: cl(-tn * 100, -30, 30), vib: a.sat < .3 ? cl((.3 - a.sat) * 120, 0, 30) : 0, sat: 0 };
+  for (const [k, v] of Object.entries(vals)) ADJ.find(x => x.k === k).set(v);
+  toast('색을 자동으로 맞췄어요');
+}
+$('#autoLight').addEventListener('click', autoLight);
+$('#autoColor').addEventListener('click', autoColor);
 
 // 필름 카드 위 두 가지 대표 색
 const SWATCH = {
@@ -671,21 +993,35 @@ function selectFilm(k) {
 }
 
 // 사진 열기
-function loadFile(file) {
-  if (!file || !file.type.startsWith('image/')) { $('#note').textContent = '이미지 파일만 열 수 있어요.'; return; }
-  const url = URL.createObjectURL(file), img = new Image();
-  img.onload = () => { setImage(img, file.name.replace(/\.[^.]+$/, ''), false); $('#note').textContent = ''; };
-  img.onerror = () => { $('#note').textContent = '이 사진은 열 수 없어요. HEIC라면 JPG로 바꿔서 열어 주세요.'; };
-  img.src = url;
+const loadImg = file => new Promise(res => {
+  const img = new Image();
+  img.onload = () => res({ img, name: (file.name || '붙여넣은 사진').replace(/\.[^.]+$/, '') });
+  img.onerror = () => res(null);
+  img.src = URL.createObjectURL(file);
+});
+async function loadFiles(files) {
+  const list = [...(files || [])].filter(f => f && f.type.startsWith('image/'));
+  if (!list.length) { $('#note').textContent = '이미지 파일만 열 수 있어요.'; return; }
+  $('#busy').hidden = false;
+  const loaded = (await Promise.all(list.map(loadImg))).filter(Boolean);
+  $('#busy').hidden = true;
+  const failed = list.length - loaded.length;
+  $('#note').textContent = failed ? `${failed}장은 열 수 없었어요. HEIC라면 JPG로 바꿔서 열어 주세요.` : '';
+  if (loaded.length) addPhotos(loaded);
 }
 $('#favBig').addEventListener('click', () => toggleFav(state.film));
 $('#openBtn').addEventListener('click', () => $('#file').click());
-$('#file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+$('#file').addEventListener('change', e => { loadFiles(e.target.files); e.target.value = ''; });
 const strip = $('#strip');
-strip.addEventListener('dragover', e => { e.preventDefault(); strip.classList.add('drop'); });
-strip.addEventListener('dragleave', () => strip.classList.remove('drop'));
-strip.addEventListener('drop', e => { e.preventDefault(); strip.classList.remove('drop'); loadFile(e.dataTransfer.files[0]); });
-document.addEventListener('paste', e => { const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/')); if (it) loadFile(it.getAsFile()); });
+for (const zone of [strip, $('#tray')]) {
+  zone.addEventListener('dragover', e => { e.preventDefault(); strip.classList.add('drop'); });
+  zone.addEventListener('dragleave', () => strip.classList.remove('drop'));
+  zone.addEventListener('drop', e => { e.preventDefault(); strip.classList.remove('drop'); loadFiles(e.dataTransfer.files); });
+}
+document.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith('image/')).map(i => i.getAsFile());
+  if (files.length) loadFiles(files);
+});
 
 // 비교
 function setSplit(v) {
@@ -719,32 +1055,80 @@ let downloadsApi;
 if (window.claude && typeof window.claude.use === 'function') {
   downloadsApi = window.claude.use('downloads').catch(() => null);
 }
+const tick = () => new Promise(r => setTimeout(r, 30));
+async function exportPhoto(p) {
+  const s = p.s, c = scaled(p.img, 6000), w = c.width, h = c.height, ctx = c.getContext('2d');
+  ctx.putImageData(develop(ctx.getImageData(0, 0, w, h), w, h, BYKEY[s.film], s.strength, s.grain, s.adj), 0, 0);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', .95));
+}
+async function deliver(blob, filename) {
+  if (downloadsApi) {
+    const api = await downloadsApi;
+    if (!api) { $('#note').textContent = '이 화면에서는 저장할 수 없어요. 미리보기 사진을 길게 누르거나 오른쪽 클릭해서 저장해 주세요.'; return; }
+    try { await api.save({ filename, data: blob }); $('#note').textContent = `${filename} 저장했어요.`; }
+    catch (e) { $('#note').textContent = e && e.code === 'declined' ? '저장을 취소했어요.' : '저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
+  } else {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    $('#note').textContent = `${filename} 저장했어요.`;
+  }
+}
+const fileName = p => `${p.sample ? 'sample' : p.name}_${p.s.film}.jpg`;
+
 $('#saveBtn').addEventListener('click', async () => {
-  if (!state.img) return;
-  const btn = $('#saveBtn'); btn.disabled = true; $('#busy').hidden = false; $('#note').textContent = '';
-  await new Promise(r => setTimeout(r, 30));
+  if (cur < 0) return;
+  photos[cur].s = snap();
+  const btn = $('#saveBtn'); btn.disabled = true; $('#busy').hidden = false; $('#busy').textContent = '현상 중…'; $('#note').textContent = '';
+  await tick();
+  try { await deliver(await exportPhoto(photos[cur]), fileName(photos[cur])); }
+  finally { btn.disabled = false; $('#busy').hidden = true; }
+});
+
+// ZIP (압축 없이 묶기)
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = []; let offset = 0;
+  for (const f of files) {
+    const data = new Uint8Array(await f.blob.arrayBuffer()), name = enc.encode(f.name), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true);
+    parts.push(lh.buffer, name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+    central.push(ch.buffer, name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((s, p) => s + p.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
+}
+$('#saveAllBtn').addEventListener('click', async () => {
+  if (cur >= 0) photos[cur].s = snap();
+  const btn = $('#saveAllBtn'); btn.disabled = true; $('#busy').hidden = false; $('#note').textContent = '';
   try {
-    const c = scaled(state.img, 6000), w = c.width, h = c.height, ctx = c.getContext('2d');
-    ctx.putImageData(develop(ctx.getImageData(0, 0, w, h), w, h, BYKEY[state.film], state.strength, state.grain), 0, 0);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .95));
-    const filename = `${state.name}_${state.film}.jpg`;
-    if (downloadsApi) {
-      const api = await downloadsApi;
-      if (!api) { $('#note').textContent = '이 화면에서는 저장할 수 없어요. 미리보기 사진을 길게 누르거나 오른쪽 클릭해서 저장해 주세요.'; return; }
-      try { await api.save({ filename, data: blob }); $('#note').textContent = `${filename} 저장했어요.`; }
-      catch (e) { $('#note').textContent = e && e.code === 'declined' ? '저장을 취소했어요.' : '저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
-    } else {
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
-      document.body.append(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      $('#note').textContent = `${filename} 저장했어요.`;
+    const files = [], used = new Set();
+    for (let i = 0; i < photos.length; i++) {
+      $('#busy').textContent = `현상 중… ${i + 1} / ${photos.length}`;
+      await tick();
+      let name = fileName(photos[i]), n = 2;
+      while (used.has(name)) name = fileName(photos[i]).replace(/\.jpg$/, `_${n++}.jpg`);
+      used.add(name);
+      files.push({ name, blob: await exportPhoto(photos[i]) });
     }
-  } finally { btn.disabled = false; $('#busy').hidden = true; }
+    $('#busy').textContent = '묶는 중…'; await tick();
+    await deliver(await makeZip(files), `필름현상소_${photos.length}장.zip`);
+  } finally { btn.disabled = false; $('#busy').hidden = true; $('#busy').textContent = '현상 중…'; }
 });
 
 buildShelf();
 showInfo();
-setImage(makeSample(), 'sample', true);
+addPhotos([{ img: makeSample(), name: 'sample' }], true);
 </script>
 </body>
 </html>
