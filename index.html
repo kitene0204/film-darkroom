@@ -22,6 +22,7 @@
   --film: #16130f;
   --edge: #f0994c;
   --focus: #1f6feb;
+  --star: #d99a00;
   --display: 'Black Han Sans', 'Malgun Gothic', sans-serif;
   --body: 'IBM Plex Sans KR', -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
@@ -119,11 +120,19 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
 .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
 .tabs button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 13px; color: var(--muted); }
 .tabs button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
-.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; margin-top: 14px; }
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 14px 12px; margin-top: 14px; padding: 4px 6px 0 0; }
 .group-title { grid-column: 1 / -1; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; color: var(--muted); margin-top: 6px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 .film { border: 2px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px; cursor: pointer; text-align: center; display: grid; gap: 2px; transition: background .15s, border-color .15s; }
 .film:hover { background: var(--bg); }
 .film[aria-pressed=true] { border-color: var(--accent); background: var(--surface); }
+.film-wrap { position: relative; display: grid; }
+.fav { position: absolute; top: -7px; right: -7px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; display: grid; place-items: center; padding: 0; font-size: 14px; line-height: 1; }
+.fav:hover { color: var(--star); border-color: var(--star); }
+.fav[aria-pressed=true] { color: var(--star); border-color: var(--star); }
+.fav-big { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.fav-big[aria-pressed=true] { color: var(--star); border-color: var(--star); font-weight: 600; }
+.title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.empty { grid-column: 1 / -1; color: var(--muted); font-size: 14px; padding: 18px; border: 2px dashed var(--line); border-radius: 12px; text-align: center; }
 .film .sw { height: 18px; border-radius: 6px; margin-bottom: 4px; }
 .film .ko { font-weight: 600; font-size: 14px; line-height: 1.3; }
 .film .tag { font-size: 12px; color: var(--muted); line-height: 1.35; }
@@ -167,10 +176,13 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
     </div>
 
     <aside class="card" aria-live="polite">
-      <div>
-        <div class="brand" id="infoBrand">KODAK</div>
-        <div class="film-name" id="infoName">포트라 400</div>
-        <div class="film-key" id="infoKey">portra_400</div>
+      <div class="title-row">
+        <div>
+          <div class="brand" id="infoBrand">KODAK</div>
+          <div class="film-name" id="infoName">포트라 400</div>
+          <div class="film-key" id="infoKey">portra_400</div>
+        </div>
+        <button type="button" class="fav-big" id="favBig" aria-pressed="false">☆ 즐겨찾기</button>
       </div>
       <p class="desc" id="infoDesc"></p>
       <p class="scene" id="infoScene"></p>
@@ -188,6 +200,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
     <div class="shelf-head">
       <h2>필름 고르기</h2>
       <div class="tabs" role="group" aria-label="브랜드">
+        <button type="button" data-brand="fav" aria-pressed="false">★ 즐겨찾기</button>
         <button type="button" data-brand="all" aria-pressed="true">전체</button>
         <button type="button" data-brand="fuji" aria-pressed="false">후지필름</button>
         <button type="button" data-brand="kodak" aria-pressed="false">코닥</button>
@@ -469,8 +482,12 @@ function chipsFor(f, t) {
 // ───────── 화면 ─────────
 const $ = s => document.querySelector(s);
 const outC = $('#out'), origC = $('#orig');
-const state = { film: 'portra_400', brand: 'all', strength: 1, grain: 1, img: null, name: 'sample', sample: true };
-try { const s = JSON.parse(localStorage.getItem('film-darkroom') || '{}'); if (BYKEY[s.film]) state.film = s.film; } catch (e) {}
+const state = { film: 'portra_400', brand: 'all', strength: 1, grain: 1, img: null, name: 'sample', sample: true, favs: new Set() };
+try {
+  const s = JSON.parse(localStorage.getItem('film-darkroom') || '{}');
+  if (BYKEY[s.film]) state.film = s.film;
+  if (Array.isArray(s.favs)) state.favs = new Set(s.favs.filter(k => BYKEY[k]));
+} catch (e) {}
 let previewSrc = null, pw = 0, ph = 0;
 
 function makeSample() {
@@ -551,12 +568,38 @@ const SWATCH = {
   vision3_500t: ['#10243a', '#ff5a45'], tri_x_400: ['#000000', '#bdbdbd'], tmax_100: ['#444444', '#f0f0f0'],
 };
 
+function saveSettings() {
+  try { localStorage.setItem('film-darkroom', JSON.stringify({ film: state.film, favs: [...state.favs] })); } catch (e) {}
+}
+function toggleFav(k) {
+  if (state.favs.has(k)) state.favs.delete(k); else state.favs.add(k);
+  saveSettings(); buildShelf(); showInfo();
+}
+
 function buildShelf() {
   const shelf = $('#shelf'); shelf.innerHTML = '';
+  const favList = FILMS.filter(f => state.favs.has(f.k));
+  const groups = [];
+  if (state.brand === 'fav' || (state.brand === 'all' && favList.length)) groups.push(['★ 즐겨찾기', favList]);
   for (const [brand, title] of [['fuji', 'FUJIFILM · 필름 시뮬레이션'], ['kodak', 'KODAK · 필름']]) {
-    if (state.brand !== 'all' && state.brand !== brand) continue;
+    if (state.brand === 'all' || state.brand === brand) groups.push([title, FILMS.filter(f => f.b === brand)]);
+  }
+  for (const [title, films] of groups) {
     const gt = document.createElement('div'); gt.className = 'group-title'; gt.textContent = title; shelf.append(gt);
-    for (const f of FILMS.filter(f => f.b === brand)) {
+    if (!films.length) {
+      const e = document.createElement('div'); e.className = 'empty';
+      e.textContent = '아직 즐겨찾기한 필름이 없어요. 필름 카드 오른쪽 위의 ☆를 눌러 담아 보세요.';
+      shelf.append(e);
+    }
+    for (const f of films) {
+      const wrap = document.createElement('div'); wrap.className = 'film-wrap';
+      const fav = document.createElement('button');
+      fav.type = 'button'; fav.className = 'fav';
+      const on = state.favs.has(f.k);
+      fav.setAttribute('aria-pressed', on);
+      fav.setAttribute('aria-label', `${f.ko} 즐겨찾기${on ? ' 해제' : ''}`);
+      fav.textContent = on ? '★' : '☆';
+      fav.addEventListener('click', () => toggleFav(f.k));
       const btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'film'; btn.dataset.k = f.k;
       btn.setAttribute('aria-pressed', f.k === state.film);
@@ -566,7 +609,8 @@ function buildShelf() {
       btn.querySelector('.ko').textContent = f.ko;
       btn.querySelector('.tag').textContent = f.tag;
       btn.addEventListener('click', () => selectFilm(f.k));
-      shelf.append(btn);
+      wrap.append(btn, fav);
+      shelf.append(wrap);
     }
   }
 }
@@ -581,6 +625,9 @@ function showInfo() {
   $('#infoBrand').textContent = f.b === 'fuji' ? 'FUJIFILM 필름 시뮬레이션' : 'KODAK 필름';
   $('#infoName').textContent = f.ko;
   $('#infoKey').textContent = f.k;
+  const on = state.favs.has(f.k);
+  $('#favBig').setAttribute('aria-pressed', on);
+  $('#favBig').textContent = on ? '★ 즐겨찾기됨' : '☆ 즐겨찾기';
   $('#infoDesc').textContent = f.desc;
   $('#infoScene').innerHTML = '<b>어울리는 장면</b> · ';
   $('#infoScene').append(f.scene);
@@ -600,7 +647,7 @@ function showInfo() {
 
 function selectFilm(k) {
   state.film = k;
-  try { localStorage.setItem('film-darkroom', JSON.stringify({ film: k })); } catch (e) {}
+  saveSettings();
   document.querySelectorAll('.film').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
   showInfo(); renderPreview();
   $('#note').textContent = '';
@@ -614,6 +661,7 @@ function loadFile(file) {
   img.onerror = () => { $('#note').textContent = '이 사진은 열 수 없어요. HEIC라면 JPG로 바꿔서 열어 주세요.'; };
   img.src = url;
 }
+$('#favBig').addEventListener('click', () => toggleFav(state.film));
 $('#openBtn').addEventListener('click', () => $('#file').click());
 $('#file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
 const strip = $('#strip');
