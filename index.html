@@ -525,7 +525,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1, adj = null) {
   if (f.vignette) {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const dx = (x - w/2) / (w/2), dy = (y - h/2) / (h/2);
-      const dd = Math.min(1, Math.sqrt(dx*dx + dy*dy) / Math.SQRT2), k = 1 - f.vignette * Math.pow(dd, 2.2), i = (y*w + x) * 3;
+      const dd = Math.min(1, Math.sqrt(dx*dx + dy*dy) / Math.SQRT2), k = 1 - f.vignette * strength * Math.pow(dd, 2.2), i = (y*w + x) * 3;
       out[i] *= k; out[i+1] *= k; out[i+2] *= k;
     }
   }
@@ -855,12 +855,16 @@ $('#adjReset').addEventListener('click', () => ADJ.forEach(a => a.set(0)));
 // 자동: 지금 사진을 분석해서 빛·색 값을 맞춘다
 function analyze(src) {
   const d = src.data, n = d.length / 4, step = Math.max(1, Math.floor(n / 60000));
-  const hist = new Uint32Array(256); let R = 0, G = 0, B = 0, S = 0, cnt = 0;
+  const hist = new Uint32Array(256); let R = 0, G = 0, B = 0, S = 0, cnt = 0, nR = 0, nG = 0, nB = 0, nc = 0;
   for (let i = 0; i < n; i += step) {
-    const j = i * 4, r = d[j], g = d[j+1], b = d[j+2];
-    hist[Math.round(.2126*r + .7152*g + .0722*b)]++;
-    R += r; G += g; B += b; const mx = Math.max(r, g, b); S += mx ? (mx - Math.min(r, g, b)) / mx : 0; cnt++;
+    const j = i * 4, r = d[j], g = d[j+1], b = d[j+2], yv = Math.round(.2126*r + .7152*g + .0722*b);
+    hist[yv]++;
+    const mx = Math.max(r, g, b), s = mx ? (mx - Math.min(r, g, b)) / mx : 0;
+    R += r; G += g; B += b; S += s; cnt++;
+    // 색 치우침은 회색에 가까운 부분으로만 잰다
+    if (s < .25 && yv > 38 && yv < 242) { nR += r; nG += g; nB += b; nc++; }
   }
+  if (nc > 500) { R = nR / nc * cnt; G = nG / nc * cnt; B = nB / nc * cnt; }
   const pct = q => { let acc = 0; const target = q * cnt; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= target) return v / 255; } return 1; };
   let mean = 0, sq = 0;
   for (let v = 0; v < 256; v++) { mean += v / 255 * hist[v]; sq += (v / 255) ** 2 * hist[v]; }
@@ -886,7 +890,7 @@ function autoColor() {
   const a = analyze(previewSrc);
   const t = (a.B - a.R) / (.3 * Math.max(a.R + a.B, 1)) * .5;
   const tn = (1 - (a.R + a.B) / 2 / Math.max(a.G, 1)) / .2 * .5;
-  const vals = { temp: cl(t * 100, -40, 40), tint: cl(-tn * 100, -30, 30), vib: a.sat < .3 ? cl((.3 - a.sat) * 120, 0, 30) : 0, sat: 0 };
+  const vals = { temp: cl(t * 100, -40, 40), tint: cl(tn * 100, -30, 30), vib: a.sat < .3 ? cl((.3 - a.sat) * 120, 0, 30) : 0, sat: 0 };
   for (const [k, v] of Object.entries(vals)) ADJ.find(x => x.k === k).set(v);
   toast('색을 자동으로 맞췄어요');
 }
