@@ -62,7 +62,8 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 20px 48px;
 }
-.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 22px; }
+.wrap { max-width: 2400px; margin: 0 auto; display: grid; gap: 22px; }
+@media (min-width: 1281px) { body { padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); } }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
@@ -80,8 +81,19 @@ h1 small { display: block; font-family: var(--mono); font-size: 12px; letter-spa
 .btn svg { width: 16px; height: 16px; }
 
 /* 작업대 */
-.bench { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
-@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+/* 넓은 화면: 사진 | 필름 설명 | 빛·색, 중간: 사진 | (설명 위·빛색 아래), 좁은 화면: 한 줄 */
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 320px 300px; gap: 20px; align-items: start; }
+.adj-card { gap: 4px; }
+.adj-card .adj:first-child { border-top: 0; padding-top: 0; }
+.adj-card .adj:first-child .auto { top: -3px; }
+@media (max-width: 1280px) {
+  .bench { grid-template-columns: minmax(0, 1fr) 320px; }
+  .stage-col { grid-row: span 2; }
+}
+@media (max-width: 900px) {
+  .bench { grid-template-columns: minmax(0, 1fr); }
+  .stage-col { grid-row: auto; }
+}
 
 /* 필름 한 컷 */
 .strip { background: var(--film); border-radius: 6px; padding: 30px 14px; position: relative; }
@@ -97,7 +109,8 @@ h1 small { display: block; font-family: var(--mono); font-size: 12px; letter-spa
 .edge span { background: var(--film); padding: 0 6px; }
 .edge.bottom { bottom: -1px; }
 .frame { position: relative; display: grid; place-items: center; min-height: 240px; user-select: none; touch-action: pan-y; }
-.frame canvas { display: block; max-width: 100%; max-height: 68vh; height: auto; }
+.frame canvas { display: block; max-width: 100%; max-height: calc(100vh - 300px); min-height: 0; height: auto; }
+@media (max-width: 900px) { .frame canvas { max-height: 68vh; } }
 #orig { position: absolute; clip-path: inset(0 calc(100% - var(--split, 0%)) 0 0); }
 .split-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); pointer-events: none; display: none; }
 .badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.55); color: #fff; font-size: 12px; padding: 3px 9px; border-radius: 999px; }
@@ -217,7 +230,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
   </header>
 
   <section class="bench">
-    <div>
+    <div class="stage-col">
       <div class="strip" id="strip">
         <div class="edge top"><span id="edgeTop">PORTRA 400</span><span id="edgeNum">▸ 12</span></div>
         <div class="frame" id="frame">
@@ -265,6 +278,10 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
         <label for="strength">강도 <input type="range" id="strength" min="0" max="100" value="100"><output id="strengthOut">100%</output></label>
         <label for="grain">입자 <input type="range" id="grain" min="0" max="200" value="100"><output id="grainOut">100%</output></label>
       </div>
+      <p class="note" id="note"></p>
+    </aside>
+
+    <aside class="card adj-card" aria-label="빛·색 보정">
       <details class="adj" open>
         <summary>빛</summary>
         <button type="button" class="mini auto" id="autoLight">자동</button>
@@ -276,7 +293,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
         <div class="adj-list" id="adjColor"></div>
       </details>
       <button type="button" class="reset" id="adjReset">빛·색 초기화</button>
-      <p class="note" id="note"></p>
     </aside>
   </section>
 
@@ -648,6 +664,8 @@ function scaled(img, maxSide) {
 
 // ───────── 여러 장 사진 ─────────
 // 사진마다 자기 설정(필름·강도·입자·빛·색)을 따로 가진다
+// 미리보기 해상도: 화면이 클수록 크게 (너무 크면 슬라이더가 느려지므로 1800까지)
+const PREVIEW_MAX = Math.round(Math.min(1800, Math.max(1000, (screen.width || 1400) * (devicePixelRatio || 1) * .62)));
 const photos = [];
 let cur = -1, clip = null;
 const snap = () => ({ film: state.film, strength: state.strength, grain: state.grain, adj: { ...state.adj } });
@@ -671,7 +689,7 @@ function selectPhoto(i) {
   cur = i;
   const p = photos[i];
   $('#sampleBadge').hidden = !p.sample;
-  if (!p.prev) { const c = scaled(p.img, 1100); p.prev = c.getContext('2d').getImageData(0, 0, c.width, c.height); }
+  if (!p.prev) { const c = scaled(p.img, PREVIEW_MAX); p.prev = c.getContext('2d').getImageData(0, 0, c.width, c.height); }
   previewSrc = p.prev; pw = p.prev.width; ph = p.prev.height;
   for (const cv of [outC, origC]) { cv.width = pw; cv.height = ph; }
   origC.getContext('2d').putImageData(previewSrc, 0, 0);
