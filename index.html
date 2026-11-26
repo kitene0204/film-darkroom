@@ -269,7 +269,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
 <div class="wrap">
   <header>
     <div>
-      <h1><small>FILM DARKROOM · 29 STOCKS</small>필름 현상소</h1>
+      <h1><small>FILM DARKROOM · 29 STOCKS + 5 PRESETS</small>필름 현상소</h1>
       <p class="lead">사진을 올리고 필름을 고르면 그 필름으로 찍은 것처럼 색이 바뀌어요. 사진은 이 화면 안에서만 처리되고 어디에도 올라가지 않아요.</p>
     </div>
     <div class="actions">
@@ -358,6 +358,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
       <div class="tabs" role="group" aria-label="브랜드">
         <button type="button" data-brand="fav" aria-pressed="false">★ 즐겨찾기</button>
         <button type="button" data-brand="all" aria-pressed="true">전체</button>
+        <button type="button" data-brand="basic" aria-pressed="false">사전설정</button>
         <button type="button" data-brand="fuji" aria-pressed="false">후지필름</button>
         <button type="button" data-brand="kodak" aria-pressed="false">코닥</button>
       </div>
@@ -370,6 +371,32 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
 // ───────── 필름 프리셋 (스킬 film-look 과 같은 값) ─────────
 const RED=0, ORANGE=30, YELLOW=55, GREEN=110, CYAN=180, BLUE=220, MAGENTA=320;
 const FILMS = [
+  // 사전설정: 메모리즈 재생(학급 사진관) 필름 카메라 액자와 같은 값
+  //   css.filter = CSS filter 순서 그대로, tint = 덧칠(160도 그라데이션), leak = 빛샘 두 개(screen), vig = 안쪽 그림자
+  {k:'gold', b:'basic', ko:'골드', en:'GOLD 200', tag:'따뜻한 노란빛 · 코닥 감성', desc:'따뜻한 노란빛이 도는 코닥 감성. 햇살 받은 오후처럼 포근해요.', scene:'나들이, 가족 사진, 가을',
+   css:{filter:[['sepia',.2],['saturate',1.3],['contrast',1.06],['brightness',1.04],['hue',-8]],
+        tint:{mode:'soft', op:1, stops:[[0,[255,190,90,.45]],[1,[200,80,40,.25]]]},
+        leak:[[255,110,40,.55],[255,200,80,.35]], vig:{size:.136, color:[40,20,0], a:.45}},
+   grain:[.03,1], tr:{sat:.75, contrast:.55, warm:.9}, chips:['노란 햇살','왼쪽 위 빛샘','주변부 어둡게']},
+  {k:'green', b:'basic', ko:'그린', en:'VIVID 400', tag:'맑은 초록빛 · 후지 감성', desc:'맑고 산뜻한 초록빛이 도는 후지 감성. 나뭇잎과 하늘이 시원해져요.', scene:'숲, 공원, 봄·여름 풍경',
+   css:{filter:[['saturate',1.12],['contrast',1.1],['brightness',1.02],['hue',8]],
+        tint:{mode:'soft', op:1, stops:[[0,[90,200,160,.4]],[1,[40,90,140,.25]]]},
+        leak:[[60,220,170,.38],[255,120,190,.28]], vig:{size:.136, color:[40,20,0], a:.45}},
+   grain:[.03,1], tr:{sat:.62, contrast:.6, warm:.35}, chips:['청록빛','분홍 빛샘','주변부 어둡게']},
+  {k:'soft', b:'basic', ko:'소프트', en:'SOFT 160', tag:'뽀얀 복숭앗빛 파스텔', desc:'대비가 약하고 뽀얀 복숭앗빛 파스텔. 얼굴이 환하고 부드럽게 나와요.', scene:'인물, 셀카, 아기·반려동물',
+   css:{filter:[['contrast',.88],['saturate',.95],['brightness',1.1],['sepia',.12]],
+        tint:{mode:'soft', op:1, stops:[[0,[255,210,190,.5]],[1,[255,240,220,.3]]]},
+        leak:[[255,170,150,.4],[255,230,180,.35]], vig:{size:.136, color:[40,20,0], a:.45}},
+   grain:[.03,1], tr:{sat:.42, contrast:.08, warm:.72}, chips:['뽀얀 톤','낮은 대비','복숭앗빛']},
+  {k:'cine', b:'basic', ko:'시네마', en:'CINE 800T', tag:'푸른 밤 · 붉은 번짐', desc:'푸른 밤 그림자와 붉은 번짐. 영화의 한 장면 같은 느낌이에요.', scene:'밤거리, 조명, 분위기 있는 장면',
+   css:{filter:[['contrast',1.2],['saturate',1.1],['brightness',.9],['hue',-6]],
+        tint:{mode:'color', op:.35, stops:[[0,[30,90,168,1]],[.6,[42,127,160,1]],[1,[192,80,58,1]]]},
+        leak:[[255,60,40,.45],[255,120,60,.3]], vig:{size:.182, color:[0,10,40], a:.6}},
+   grain:[.03,1], tr:{sat:.6, contrast:.85, warm:.22}, chips:['푸른 그림자','붉은 빛 번짐','진한 주변부']},
+  {k:'bw', b:'basic', ko:'흑백', en:'B&W 400', tag:'클래식 흑백 사진', desc:'또렷한 대비의 클래식 흑백 사진. 시간이 멈춘 듯한 느낌이에요.', scene:'인물, 거리, 옛날 느낌',
+   css:{filter:[['grayscale',1],['contrast',1.15],['brightness',1.06]],
+        leak:[[255,255,255,.25],[255,255,255,.15]], vig:{size:.136, color:[40,20,0], a:.45}},
+   grain:[.03,1], tr:{mono:true, contrast:.7}, chips:['흑백','하얀 빛샘','주변부 어둡게']},
   // 후지필름
   {k:'provia', b:'fuji', ko:'프로비아', en:'PROVIA', tag:'표준 · 무난한 기본색', desc:'자연스러운 채도와 적당한 대비. 무엇을 찍어도 무난한 후지의 기본 색.', scene:'일상, 여행, 무엇이든',
    curve:[[0,0],[.25,.23],[.5,.5],[.75,.77],[1,1]], sat:1.06},
@@ -522,6 +549,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1, adj = null) {
   const kr = 1 + temp * .25, kg = 1 - tint * .15, kb = 1 - temp * .25;
   const sat = f.sat ?? 1, bands = f.bands || [], chrome = f.chrome || 0;
   const sh = f.shadow, hi = f.highlight, tone = f.tone || [0,0,0], mono = f.mono;
+  const css = f.css ? prepCss(f.css) : null, C3 = new Float64Array(3);
   const useHsv = bands.length || chrome;
   for (let i = 0, j = 0; i < N; i++, j += 4) {
     let r = d[j] / 255, g = d[j+1] / 255, b = d[j+2] / 255;
@@ -546,6 +574,10 @@ function develop(src, w, h, f, strength = 1, grainScale = 1, adj = null) {
       r = clamp(r); g = clamp(g); b = clamp(b);
     }
     const br = r, bgc = g, bb = b;
+    if (css) {
+      cssPixel(css, r, g, b, i % w, (i / w) | 0, w, h, C3);
+      r = C3[0]; g = C3[1]; b = C3[2];
+    } else {
     r *= kr; g *= kg; b *= kb;
     if (mono) {
       const y = lk(f.L, clamp(r*mono[0] + g*mono[1] + b*mono[2]));
@@ -583,6 +615,7 @@ function develop(src, w, h, f, strength = 1, grainScale = 1, adj = null) {
       const y2 = clamp(.2126*r + .7152*g + .0722*b);
       if (sh) { const ws = (1 - y2) * (1 - y2) * 2.5; r += sh[0]*ws; g += sh[1]*ws; b += sh[2]*ws; }
       if (hi) { const wh = y2 * y2 * 2.5; r += hi[0]*wh; g += hi[1]*wh; b += hi[2]*wh; }
+    }
     }
     if (strength !== 1) { r = br + (r - br) * strength; g = bgc + (g - bgc) * strength; b = bb + (b - bb) * strength; }
     out[i*3] = r; out[i*3+1] = g; out[i*3+2] = b;
@@ -631,8 +664,76 @@ function develop(src, w, h, f, strength = 1, grainScale = 1, adj = null) {
   return res;
 }
 
+// ───────── 사전설정 (CSS 필터 + 덧칠 + 빛샘 + 주변부) 계산 ─────────
+// CSS filter 함수들을 하나의 3x4 행렬로 합친다 (W3C Filter Effects 행렬 그대로)
+function prepCss(c) {
+  if (c.M) return c;
+  let M = [[1,0,0,0],[0,1,0,0],[0,0,1,0]];
+  const apply = A => { M = A.map(row => [0,1,2,3].map(j => row[0]*M[0][j] + row[1]*M[1][j] + row[2]*M[2][j] + (j === 3 ? (row[3] || 0) : 0))); };
+  for (const [op, v] of c.filter) {
+    if (op === 'contrast') apply([[v,0,0,.5-.5*v],[0,v,0,.5-.5*v],[0,0,v,.5-.5*v]]);
+    else if (op === 'brightness') apply([[v,0,0],[0,v,0],[0,0,v]]);
+    else if (op === 'saturate') apply([[.213+.787*v, .715-.715*v, .072-.072*v],[.213-.213*v, .715+.285*v, .072-.072*v],[.213-.213*v, .715-.715*v, .072+.928*v]]);
+    else if (op === 'sepia') { const a = 1 - v; apply([[.393+.607*a, .769-.769*a, .189-.189*a],[.349-.349*a, .686+.314*a, .168-.168*a],[.272-.272*a, .534-.534*a, .131+.869*a]]); }
+    else if (op === 'grayscale') { const a = 1 - v; apply([[.2126+.7874*a, .7152-.7152*a, .0722-.0722*a],[.2126-.2126*a, .7152+.2848*a, .0722-.0722*a],[.2126-.2126*a, .7152-.7152*a, .0722+.9278*a]]); }
+    else if (op === 'hue') { const t = v * Math.PI / 180, co = Math.cos(t), si = Math.sin(t);
+      apply([[.213+co*.787-si*.213, .715-co*.715-si*.715, .072-co*.072+si*.928],
+             [.213-co*.213+si*.143, .715+co*.285+si*.140, .072-co*.072-si*.283],
+             [.213-co*.213-si*.787, .715-co*.715+si*.715, .072+co*.928+si*.072]]); }
+  }
+  c.M = M;
+  return c;
+}
+const softLight = (cb, cs) => cs <= .5 ? cb - (1 - 2*cs) * cb * (1 - cb)
+  : cb + (2*cs - 1) * ((cb <= .25 ? ((16*cb - 12)*cb + 4)*cb : Math.sqrt(cb)) - cb);
+function cssPixel(c, r, g, b, x, y, w, h, out) {
+  const M = c.M;
+  let R = clamp(M[0][0]*r + M[0][1]*g + M[0][2]*b + M[0][3]);
+  let G = clamp(M[1][0]*r + M[1][1]*g + M[1][2]*b + M[1][3]);
+  let B = clamp(M[2][0]*r + M[2][1]*g + M[2][2]*b + M[2][3]);
+  // 덧칠: 160도 방향 그라데이션
+  if (c.tint) {
+    const dx = 0.3420, dy = 0.9397, L = w * dx + h * dy;
+    const t = clamp(((x - w/2) * dx + (y - h/2) * dy) / L + .5);
+    const st = c.tint.stops; let k = 0; while (k < st.length - 2 && t > st[k+1][0]) k++;
+    const u = clamp((t - st[k][0]) / (st[k+1][0] - st[k][0] || 1)), A = st[k][1], Bc = st[k+1][1];
+    const cr = (A[0] + (Bc[0]-A[0])*u) / 255, cg = (A[1] + (Bc[1]-A[1])*u) / 255, cb2 = (A[2] + (Bc[2]-A[2])*u) / 255;
+    const a = (A[3] + (Bc[3]-A[3])*u) * c.tint.op;
+    if (c.tint.mode === 'soft') {
+      R += a * (softLight(R, cr) - R); G += a * (softLight(G, cg) - G); B += a * (softLight(B, cb2) - B);
+    } else { // color: 덧칠 색의 색상·채도 + 사진의 밝기 (W3C SetLum)
+      const lum = .3*R + .59*G + .11*B, d = lum - (.3*cr + .59*cg + .11*cb2);
+      let nr = cr + d, ng = cg + d, nb = cb2 + d;
+      const l = .3*nr + .59*ng + .11*nb, n = Math.min(nr, ng, nb), xx = Math.max(nr, ng, nb);
+      if (n < 0) { nr = l + (nr-l)*l/(l-n); ng = l + (ng-l)*l/(l-n); nb = l + (nb-l)*l/(l-n); }
+      if (xx > 1) { nr = l + (nr-l)*(1-l)/(xx-l); ng = l + (ng-l)*(1-l)/(xx-l); nb = l + (nb-l)*(1-l)/(xx-l); }
+      R += a * (nr - R); G += a * (ng - G); B += a * (nb - B);
+    }
+  }
+  // 빛샘: 왼쪽 위(가로 45%·세로 70% 타원, 25% 높이)와 오른쪽 아래(30%·40%), screen, 투명도 0.8
+  if (c.leak) {
+    const L1 = c.leak[0], L2 = c.leak[1];
+    const d1 = Math.hypot(x / (.45*w), (y - .25*h) / (.7*h)), d2 = Math.hypot((x - w) / (.3*w), (y - h) / (.4*h));
+    for (const [d, Lc] of [[d1, L1], [d2, L2]]) {
+      if (d >= .7) continue;
+      const a = Lc[3] * (1 - d / .7) * .8, sr = Lc[0]/255, sg = Lc[1]/255, sb = Lc[2]/255;
+      R += a * (sr - R*sr); G += a * (sg - G*sg); B += a * (sb - B*sb);
+    }
+  }
+  // 주변부: 안쪽 그림자 (흐림 = 사진 높이의 size 배)
+  if (c.vig) {
+    const s = c.vig.size * h / 2, ex = Math.min(x, w - 1 - x), ey = Math.min(y, h - 1 - y);
+    const cov = 1 / (1 + Math.exp(-1.702 * ex / s)) * 1 / (1 + Math.exp(-1.702 * ey / s));
+    const a = c.vig.a * (1 - cov), vc = c.vig.color;
+    R += a * (vc[0]/255 - R); G += a * (vc[1]/255 - G); B += a * (vc[2]/255 - B);
+  }
+  out[0] = R; out[1] = G; out[2] = B;
+}
+
 // ───────── 색감 지표 (설명 막대) ─────────
 function traits(f) {
+  if (f.tr) return { sat: f.tr.mono ? 0 : f.tr.sat, contrast: f.tr.contrast, warm: f.tr.mono ? .5 : f.tr.warm,
+                     grain: clamp((f.grain ? f.grain[0] : 0) / .06), fade: 0, mono: !!f.tr.mono };
   const contrast = (lk(f.L, .8) - lk(f.L, .2)) / .6;
   const hiw = f.highlight ? (f.highlight[0] - f.highlight[2]) * 3 : 0;
   const warm = (f.wb ? f.wb[0] : 0) + hiw;
@@ -648,6 +749,7 @@ function traits(f) {
 }
 function word(v, words) { return words[Math.min(words.length - 1, Math.floor(v * words.length))]; }
 function chipsFor(f, t) {
+  if (f.chips) return f.chips;
   const c = [];
   if (t.mono) c.push(f.tone ? '갈색 톤 흑백' : '흑백');
   if (t.fade >= .03) c.push('살짝 바랜 검정');
@@ -998,6 +1100,7 @@ $('#autoColor').addEventListener('click', autoColor);
 
 // 필름 카드 위 두 가지 대표 색
 const SWATCH = {
+  gold: ['#ffb703', '#c1121f'], green: ['#0a8f5b', '#9be7c4'], soft: ['#f6c9b0', '#fff1e6'], cine: ['#1f1f1f', '#ff5a45'], bw: ['#2b2b2b', '#e9e9e9'],
   provia: ['#3a7bd5', '#e9e4d8'], velvia: ['#0b8a3e', '#d0103a'], astia: ['#f3c4b0', '#6fa8dc'],
   classic_chrome: ['#6f7f86', '#a8573f'], classic_neg: ['#2f6f6a', '#c8463c'], nostalgic_neg: ['#d99a3d', '#6b4a2f'],
   pro_neg_std: ['#d9c2b0', '#8a9aa5'], pro_neg_hi: ['#c99b84', '#4f6573'], eterna: ['#3f5a5c', '#b9a88f'],
@@ -1023,7 +1126,7 @@ function buildShelf() {
   const favList = FILMS.filter(f => state.favs.has(f.k));
   const groups = [];
   if (state.brand === 'fav' || (state.brand === 'all' && favList.length)) groups.push(['★ 즐겨찾기', favList]);
-  for (const [brand, title] of [['fuji', 'FUJIFILM · 필름 시뮬레이션'], ['kodak', 'KODAK · 필름']]) {
+  for (const [brand, title] of [['basic', '사전설정 · 처음이라면 여기서'], ['fuji', 'FUJIFILM · 필름 시뮬레이션'], ['kodak', 'KODAK · 필름']]) {
     if (state.brand === 'all' || state.brand === brand) groups.push([title, FILMS.filter(f => f.b === brand)]);
   }
   for (const [title, films] of groups) {
@@ -1064,7 +1167,7 @@ function meterRow(label, left, right, v, cls = '') {
 
 function showInfo() {
   const f = BYKEY[state.film], t = traits(f);
-  $('#infoBrand').textContent = f.b === 'fuji' ? 'FUJIFILM 필름 시뮬레이션' : 'KODAK 필름';
+  $('#infoBrand').textContent = f.b === 'basic' ? '사전설정 · 메모리즈 재생' : f.b === 'fuji' ? 'FUJIFILM 필름 시뮬레이션' : 'KODAK 필름';
   $('#infoName').textContent = f.ko;
   $('#infoKey').textContent = f.k;
   const on = state.favs.has(f.k);
