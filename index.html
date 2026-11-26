@@ -258,6 +258,18 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
   .ctrl input[type=range], .under input[type=range] { height: 28px; }
   .fav { width: 30px; height: 30px; }
 }
+/* ───────── 컴퓨터 화면 ─────────
+   필름 고르기를 사진 칸 안에 두고, 사진(필름 컷)과 필름 탭 줄을 위에 고정한다.
+   넓은 화면에서는 오른쪽 설명·빛색 칸도 따라 내려온다(칸 안에서만 스크롤). */
+@media (min-width: 901px) {
+  .strip { position: sticky; top: 10px; z-index: 15; box-shadow: 0 0 0 10px var(--bg), 0 14px 24px rgba(0,0,0,.28); }
+  .frame canvas { max-height: min(calc(100vh - 300px), 58vh); }
+  .shelf-sec { margin-top: 18px; }
+  .shelf-head { position: sticky; top: calc(20px + var(--strip-h, 0px)); z-index: 12; background: var(--bg); padding-block: 6px 10px; }
+}
+@media (min-width: 1281px) {
+  .bench > aside { position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow-y: auto; }
+}
 .phone-only { display: none; }
 @media (max-width: 700px) { .phone-only { display: block; } .desk-only { display: none; } }
 /* 키보드가 없는 기기에서는 단축키 표시를 숨김 */
@@ -300,6 +312,19 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
         <label for="split">원본 비교 <input type="range" id="split" min="0" max="100" value="0"></label>
         <span>사진을 누르고 있으면 원본이 보여요 · 여러 장 끌어다 놓기도 돼요</span>
       </div>
+      <section class="shelf-sec">
+        <div class="shelf-head">
+          <h2>필름 고르기</h2>
+          <div class="tabs" role="group" aria-label="브랜드">
+            <button type="button" data-brand="fav" aria-pressed="false">★ 즐겨찾기</button>
+            <button type="button" data-brand="all" aria-pressed="true">전체</button>
+            <button type="button" data-brand="basic" aria-pressed="false">사전설정</button>
+            <button type="button" data-brand="fuji" aria-pressed="false">후지필름</button>
+            <button type="button" data-brand="kodak" aria-pressed="false">코닥</button>
+          </div>
+        </div>
+        <div class="shelf" id="shelf"></div>
+      </section>
       <div class="tray-box">
         <div class="tray-head">
           <b>사진 <span id="count">1</span>장</b>
@@ -350,20 +375,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
       </details>
       <button type="button" class="reset" id="adjReset">빛·색 초기화</button>
     </aside>
-  </section>
-
-  <section class="shelf-sec">
-    <div class="shelf-head">
-      <h2>필름 고르기</h2>
-      <div class="tabs" role="group" aria-label="브랜드">
-        <button type="button" data-brand="fav" aria-pressed="false">★ 즐겨찾기</button>
-        <button type="button" data-brand="all" aria-pressed="true">전체</button>
-        <button type="button" data-brand="basic" aria-pressed="false">사전설정</button>
-        <button type="button" data-brand="fuji" aria-pressed="false">후지필름</button>
-        <button type="button" data-brand="kodak" aria-pressed="false">코닥</button>
-      </div>
-    </div>
-    <div class="shelf" id="shelf"></div>
   </section>
 </div>
 
